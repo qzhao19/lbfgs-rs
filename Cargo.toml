@@ -1,0 +1,9 @@
+[package]
+name = "lbfgs-rs"
+version = "0.0.0"
+edition = "2021"
+description = "A high-performance, memory-safe L-BFGS optimization algorithm implementation in Rust."
+license = "Apache-2.0"
+repository = "https://github.com/qzhao19/lbfgs-rs"
+
+[dependencies]
