@@ -6,4 +6,9 @@ description = "A high-performance, memory-safe L-BFGS optimization algorithm imp
 license = "Apache-2.0"
 repository = "https://github.com/qzhao19/lbfgs-rs"
 
+[features]
+default = ["f64"]
+f32 = []
+f64 = []
+
 [dependencies]
