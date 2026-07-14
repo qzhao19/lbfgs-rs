@@ -10,5 +10,6 @@ repository = "https://github.com/qzhao19/lbfgs-rs"
 default = ["f64"]
 f32 = []
 f64 = []
+neon = []
 
 [dependencies]
