@@ -1,5 +1,5 @@
-use lbfgs_rs::data::dense::DenseDataset;
 use lbfgs_rs::data::dataset::Dataset;
+use lbfgs_rs::data::dense::DenseDataset;
 use lbfgs_rs::shared::types::primitives::{FeatureType, LabelType};
 
 /// Build a 3×2 row-major dataset: [[1,2], [3,4], [5,6]]
