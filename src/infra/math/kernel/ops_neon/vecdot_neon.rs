@@ -4,10 +4,10 @@ use crate::shared::types::primitives::ScalarType;
 use std::arch::aarch64::*;
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
-use crate::shared::constants::{FTYPE_LANES, FTYPE_UNROLL};
+use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
-use crate::shared::constants::{DTYPE_LANES, DTYPE_UNROLL};
+use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
 ///  Scalar dot product
 #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
