@@ -4,10 +4,10 @@ use crate::shared::types::primitives::ScalarType;
 use std::arch::aarch64::*;
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
-use crate::shared::constants::{FTYPE_LANES, FTYPE_UNROLL};
+use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
-use crate::shared::constants::{DTYPE_LANES, DTYPE_UNROLL};
+use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
 /// Scalar fused multiply-add: acc[i] += src[i] × scalar — portable fallback.
 #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
@@ -80,7 +80,7 @@ unsafe fn vecadd_neon_float_impl(src: &[ScalarType], scalar: ScalarType, acc: &m
 #[inline]
 unsafe fn vecadd_neon_double_impl(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
     let len = src.len();
-    
+
     let scalar_v = vdupq_n_f64(scalar);
 
     let acc_ptr = acc.as_mut_ptr();
