@@ -1,2 +1,2 @@
-pub mod vecadd_test;
-pub mod vecdot_test;
+pub mod test_vecadd;
+pub mod test_vecdot;

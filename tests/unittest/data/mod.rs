@@ -1,1 +1,1 @@
-mod dense_test;
+mod test_dense;
