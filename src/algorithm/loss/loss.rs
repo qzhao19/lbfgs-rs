@@ -1,24 +1,19 @@
-use crate::shared::types::ScalarType;
+use crate::data::dataset::Dataset;
+use crate::shared::types::primitives::{FeatureType, LabelType, ScalarType};
 
 pub trait LossFunc {
-    // Loss value of a single sample 
-    fn evaluate(&self, y_pred: ScalarType, y_true: ScalarType) -> ScalarType;
+    /// Compute loss for a single sample.
+    fn evaluate(&self, y_pred: FeatureType, y_true: LabelType) -> ScalarType;
 
-    // Derivate of a single sample
-    fn derivate(&self, y_pred: ScalarType, y_true: ScalarType) -> ScalarType;
+    /// Compute gradient of loss w.r.t. prediction.
+    fn derivate(&self, y_pred: FeatureType, y_true: LabelType) -> ScalarType;
 
-    // Calculate the total loss and accumulate the gradients over the entire dataset.
+    /// Compute total loss and accumulate gradients over the entire dataset.
+    /// Returns total loss value.
     fn evaluate_with_gradient(
-        &mut self, 
-        x: &[Vec<Scalar>],
-        y: &[Scalar],
-        w: &[Scalar],
-        grad: &mut [Scalar],
+        &mut self,
+        dataset: &dyn Dataset,
+        w: &[FeatureType],
+        grad: &mut [FeatureType],
     ) -> ScalarType;
-
-    // Setup hyper-parameters
-    fn set_params(&mut self, name: &str, value: &ScalarType);
-
-    // Setup callback function
-    fn set_callback(&mut self, callback: Box<dyn Fn(&[ScalarType])>);
 }
