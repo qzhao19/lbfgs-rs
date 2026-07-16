@@ -63,7 +63,7 @@ unsafe fn vecadd_neon_float_impl(src: &[ScalarType], scalar: ScalarType, acc: &m
 
     // Handling remaining blocks that are less than 4-way
     // but still fill one vector width.
-    while i + FTYPE_LANES < len {
+    while i + FTYPE_LANES <= len {
         let av = vld1q_f32(acc_ptr.add(i));
         let sv = vld1q_f32(src_ptr.add(i));
         vst1q_f32(acc_ptr.add(i), vfmaq_f32(av, sv, scalar_v));
@@ -102,7 +102,7 @@ unsafe fn vecadd_neon_double_impl(src: &[ScalarType], scalar: ScalarType, acc: &
         i += DTYPE_LANES;
     }
 
-    while i + DTYPE_LANES < len {
+    while i + DTYPE_LANES <= len {
         let av = vld1q_f64(acc_ptr.add(i));
         let sv = vld1q_f64(src_ptr.add(i));
         vst1q_f64(acc_ptr.add(i), vfmaq_f64(av, sv, scalar_v));
