@@ -1,16 +1,25 @@
 use crate::shared::types::primitives::ScalarType;
 
-#[cfg(all(target_arch = "aarch64", feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", feature = "neon", not(target_os = "macos")))]
 use std::arch::aarch64::*;
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f32",
+    not(target_os = "macos")
+))]
 use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f64",
+    not(target_os = "macos")
+))]
 use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
 /// Scalar fused multiply-add: acc[i] += src[i] × scalar — portable fallback.
-#[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
 #[inline]
 pub fn vecadd_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
     debug_assert_eq!(src.len(), acc.len(), "vector length mismatch");
@@ -20,9 +29,14 @@ pub fn vecadd_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f32",
+    not(target_os = "macos")
+))]
 #[inline]
-unsafe fn vecadd_neon_float_impl(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
+unsafe fn vecadd_neon_float_impl(src: &[f32], scalar: f32, acc: &mut [f32]) {
     let len: usize = src.len();
 
     // Scalar broadcast to vector register
@@ -76,9 +90,14 @@ unsafe fn vecadd_neon_float_impl(src: &[ScalarType], scalar: ScalarType, acc: &m
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f64",
+    not(target_os = "macos")
+))]
 #[inline]
-unsafe fn vecadd_neon_double_impl(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
+unsafe fn vecadd_neon_double_impl(src: &[f64], scalar: f64, acc: &mut [f64]) {
     let len = src.len();
 
     let scalar_v = vdupq_n_f64(scalar);
@@ -119,16 +138,29 @@ unsafe fn vecadd_neon_double_impl(src: &[ScalarType], scalar: ScalarType, acc: &
 
 /// Element-wise fused multiply-add: acc[i] += src[i] × scalar.
 pub fn vecadd(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
-    #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "neon",
+        feature = "f64",
+        not(target_os = "macos")
+    ))]
     unsafe {
         vecadd_neon_double_impl(src, scalar, acc);
     }
-    // NEON f32 path
-    #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "neon",
+        feature = "f32",
+        not(target_os = "macos")
+    ))]
     unsafe {
         vecadd_neon_float_impl(src, scalar, acc);
     }
 
-    #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
+    #[cfg(any(
+        not(all(target_arch = "aarch64", feature = "neon")),
+        target_os = "macos"
+    ))]
     vecadd_ansi(src, scalar, acc);
 }
