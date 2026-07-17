@@ -1,16 +1,25 @@
 use crate::shared::types::primitives::ScalarType;
 
-#[cfg(all(target_arch = "aarch64", feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", feature = "neon", not(target_os = "macos")))]
 use std::arch::aarch64::*;
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f32",
+    not(target_os = "macos")
+))]
 use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
 
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f64",
+    not(target_os = "macos")
+))]
 use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
 ///  Scalar dot product
-#[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
 #[inline]
 fn vecdot_ansi(x: &[ScalarType], y: &[ScalarType]) -> ScalarType {
     debug_assert_eq!(x.len(), y.len(), "vector length mismatch");
@@ -24,7 +33,12 @@ fn vecdot_ansi(x: &[ScalarType], y: &[ScalarType]) -> ScalarType {
 }
 
 /// NEON-accelerated dot product for f32.
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f32",
+    not(target_os = "macos")
+))]
 #[inline]
 unsafe fn vecdot_neon_float_impl(x: &[f32], y: &[f32]) -> f32 {
     let len: usize = x.len();
@@ -91,7 +105,12 @@ unsafe fn vecdot_neon_float_impl(x: &[f32], y: &[f32]) -> f32 {
 }
 
 /// NEON-accelerated dot product for f64
-#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "neon",
+    feature = "f64",
+    not(target_os = "macos")
+))]
 #[inline]
 unsafe fn vecdot_neon_double_impl(x: &[f64], y: &[f64]) -> f64 {
     let len = x.len();
@@ -142,16 +161,29 @@ unsafe fn vecdot_neon_double_impl(x: &[f64], y: &[f64]) -> f64 {
 /// Automatically selects NEON or scalar path at compile time.
 pub fn vecdot(x: &[ScalarType], y: &[ScalarType]) -> ScalarType {
     // NEON f64 path
-    #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f64"))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "neon",
+        feature = "f64",
+        not(target_os = "macos")
+    ))]
     unsafe {
         return vecdot_neon_double_impl(x, y);
     }
     // NEON f32 path
-    #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "f32"))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "neon",
+        feature = "f32",
+        not(target_os = "macos")
+    ))]
     unsafe {
         return vecdot_neon_float_impl(x, y);
     }
 
-    #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
+    #[cfg(any(
+        not(all(target_arch = "aarch64", feature = "neon")),
+        target_os = "macos"
+    ))]
     return vecdot_ansi(x, y);
 }
