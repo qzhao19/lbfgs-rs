@@ -1,2 +1,3 @@
-pub mod vecadd_neon;
-pub mod vecdot_neon;
+pub mod vec_dot;
+pub mod vec_scaled_add;
+pub mod vec_scaled_add_inplace;
