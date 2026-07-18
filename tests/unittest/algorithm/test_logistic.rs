@@ -5,6 +5,31 @@ use lbfgs_rs::shared::types::primitives::{FeatureType, LabelType, ScalarType};
 
 // ── helpers ──
 
+fn evaluate(y_pred: FeatureType, y_true: LabelType) -> ScalarType {
+    let z = y_pred * y_true;
+    if z > 18.0 {
+        return (-z).exp();
+    }
+    if z < -18.0 {
+        return -z;
+    }
+    return (-z).exp().ln_1p();
+}
+
+/// Compute gradient of loss w.r.t. prediction
+fn derivate(y_pred: FeatureType, y_true: LabelType) -> ScalarType {
+    let z = y_pred * y_true;
+    if z > 18.0 {
+        return (-z).exp() * (-y_true);
+    }
+
+    if z < -18.0 {
+        return -y_true;
+    }
+
+    return -y_true / (z.exp() + 1.0);
+}
+
 /// Tolerance for floating-point comparisons.
 fn epsilon() -> ScalarType {
     if cfg!(feature = "f32") {
@@ -122,8 +147,8 @@ mod with_gradient {
         // Manual computation
         let mut loss = LogLoss::new();
         let y_hat = (1.0 * 0.5 + 2.0 * (-0.5)) as ScalarType; // = -0.5
-        let l_manual = loss.evaluate(y_hat, 1.0);
-        let d = loss.derivate(y_hat, 1.0);
+        let l_manual = evaluate(y_hat, 1.0);
+        let d = derivate(y_hat, 1.0);
         let g_manual = vec![d * 1.0, d * 2.0];
 
         // Via evaluate_with_gradient
@@ -158,8 +183,8 @@ mod with_gradient {
         let mut g_manual = vec![0.0; 2];
         for i in 0..3 {
             let y_hat = x[i][0] * w[0] + x[i][1] * w[1];
-            l_manual += loss.evaluate(y_hat, y[i]);
-            let d = loss.derivate(y_hat, y[i]);
+            l_manual += evaluate(y_hat, y[i]);
+            let d = derivate(y_hat, y[i]);
             g_manual[0] += d * x[i][0];
             g_manual[1] += d * x[i][1];
         }
