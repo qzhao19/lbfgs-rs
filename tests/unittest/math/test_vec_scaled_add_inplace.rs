@@ -1,4 +1,4 @@
-use lbfgs_rs::infra::math::kernel::ops_neon::vecadd_neon::vecadd;
+use lbfgs_rs::infra::math::kernel::vec_scaled_add_inplace;
 use lbfgs_rs::shared::types::primitives::ScalarType;
 
 // ── Helper utilities ──
@@ -31,13 +31,13 @@ fn epsilon() -> ScalarType {
 
 // T0 — Input validation
 //
-// TODO: Enable T0.1/T0.2 after adding `assert_eq!` to `vecadd`.
+// TODO: Enable T0.1/T0.2 after adding `assert_eq!` to `vec_scaled_add_inplace`.
 // Currently only `debug_assert_eq!` in ansi path, no check in NEON path.
 
 #[test]
 fn t0_3_empty_vectors() {
     let mut acc: Vec<ScalarType> = vec![];
-    vecadd(&[], 2.0 as ScalarType, &mut acc);
+    vec_scaled_add_inplace(&[], 2.0 as ScalarType, &mut acc);
     assert_eq!(acc.len(), 0);
 }
 
@@ -46,7 +46,7 @@ fn t0_4_scalar_zero_acc_unchanged() {
     let src = vec![1.0 as ScalarType, 2.0 as ScalarType, 3.0 as ScalarType];
     let mut acc = vec![10.0 as ScalarType, 20.0 as ScalarType, 30.0 as ScalarType];
     let expected = acc.clone();
-    vecadd(&src, 0.0 as ScalarType, &mut acc);
+    vec_scaled_add_inplace(&src, 0.0 as ScalarType, &mut acc);
     assert_eq!(acc, expected);
 }
 
@@ -58,7 +58,7 @@ mod basic_correctness {
     fn t1_1_basic_accumulate_scalar_one() {
         let src = vec![4.0 as ScalarType, 5.0 as ScalarType, 6.0 as ScalarType];
         let mut acc = vec![1.0 as ScalarType, 2.0 as ScalarType, 3.0 as ScalarType];
-        vecadd(&src, 1.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 1.0 as ScalarType, &mut acc);
         assert_eq!(
             acc,
             vec![5.0 as ScalarType, 7.0 as ScalarType, 9.0 as ScalarType]
@@ -69,7 +69,7 @@ mod basic_correctness {
     fn t1_2_scalar_two() {
         let src = vec![4.0 as ScalarType, 5.0 as ScalarType, 6.0 as ScalarType];
         let mut acc = vec![1.0 as ScalarType, 2.0 as ScalarType, 3.0 as ScalarType];
-        vecadd(&src, 2.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 2.0 as ScalarType, &mut acc);
         assert_eq!(
             acc,
             vec![9.0 as ScalarType, 12.0 as ScalarType, 15.0 as ScalarType]
@@ -86,7 +86,7 @@ mod basic_correctness {
             4.0 as ScalarType,
         ];
         let expected = acc.clone();
-        vecadd(&src, 5.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 5.0 as ScalarType, &mut acc);
         assert_eq!(acc, expected);
     }
 
@@ -94,7 +94,7 @@ mod basic_correctness {
     fn t1_4_acc_all_zeros() {
         let src = vec![4.0 as ScalarType, 5.0 as ScalarType, 6.0 as ScalarType];
         let mut acc = vec![0.0 as ScalarType; 3];
-        vecadd(&src, 1.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 1.0 as ScalarType, &mut acc);
         assert_eq!(
             acc,
             vec![4.0 as ScalarType, 5.0 as ScalarType, 6.0 as ScalarType]
@@ -105,7 +105,7 @@ mod basic_correctness {
     fn t1_5_negative_scalar() {
         let src = vec![1.0 as ScalarType, 2.0 as ScalarType, 3.0 as ScalarType];
         let mut acc = vec![10.0 as ScalarType, 20.0 as ScalarType, 30.0 as ScalarType];
-        vecadd(&src, -1.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, -1.0 as ScalarType, &mut acc);
         assert_eq!(
             acc,
             vec![9.0 as ScalarType, 18.0 as ScalarType, 27.0 as ScalarType]
@@ -116,7 +116,7 @@ mod basic_correctness {
     fn t1_6_fractional_scalar() {
         let src = vec![2.0 as ScalarType, 4.0 as ScalarType, 8.0 as ScalarType];
         let mut acc = vec![0.0 as ScalarType; 3];
-        vecadd(&src, 0.5 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 0.5 as ScalarType, &mut acc);
         assert_eq!(
             acc,
             vec![1.0 as ScalarType, 2.0 as ScalarType, 4.0 as ScalarType]
@@ -130,7 +130,7 @@ mod basic_correctness {
         let mut acc = arange(n); // acc = [0,1,2,...], src = [0,1,2,...], scalar=1.0 → acc = [0,2,4,...]
         let mut expected = acc.clone();
         vecadd_oracle(&src, 1.0 as ScalarType, &mut expected);
-        vecadd(&src, 1.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 1.0 as ScalarType, &mut acc);
         assert_eq!(acc, expected);
     }
 }
@@ -139,7 +139,7 @@ mod basic_correctness {
 mod boundary_alignment {
     use super::*;
 
-    /// Assert vecadd result matches oracle for given length and scalar.
+    /// Assert vec_scaled_add_inplace result matches oracle for given length and scalar.
     fn assert_vecadd(len: usize, scalar: ScalarType) {
         let src = arange(len);
         let init: Vec<ScalarType> = (0..len).map(|i| (i as ScalarType) * 0.5).collect();
@@ -147,7 +147,7 @@ mod boundary_alignment {
         let mut acc = init.clone();
         let mut expected = init.clone();
 
-        vecadd(&src, scalar, &mut acc);
+        vec_scaled_add_inplace(&src, scalar, &mut acc);
         vecadd_oracle(&src, scalar, &mut expected);
 
         for (i, (a, e)) in acc.iter().zip(expected.iter()).enumerate() {
@@ -166,7 +166,7 @@ mod boundary_alignment {
     #[test]
     fn t2_1_len_0() {
         let mut acc = vec![];
-        vecadd(&[], s(), &mut acc);
+        vec_scaled_add_inplace(&[], s(), &mut acc);
         assert_eq!(acc.len(), 0);
     }
     #[test]
@@ -245,7 +245,7 @@ mod boundary_alignment {
     }
 }
 
-// T3 — In-place mutation correctness (vecadd-specific)
+// T3 — In-place mutation correctness (vec_scaled_add_inplace-specific)
 mod inplace_mutation {
     use super::*;
 
@@ -256,9 +256,9 @@ mod inplace_mutation {
         let src_c = vec![3.0 as ScalarType, 3.0 as ScalarType];
         let mut acc = vec![10.0 as ScalarType, 10.0 as ScalarType];
 
-        vecadd(&src_a, 2.0 as ScalarType, &mut acc);
-        vecadd(&src_b, 3.0 as ScalarType, &mut acc);
-        vecadd(&src_c, 1.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src_a, 2.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src_b, 3.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src_c, 1.0 as ScalarType, &mut acc);
 
         // 10 + 1·2 = 12; 12 + 2·3 = 18; 18 + 3·1 = 21
         // 10 + 0·2 = 10; 10 + 2·3 = 16; 16 + 3·1 = 19
@@ -268,7 +268,7 @@ mod inplace_mutation {
     #[test]
     fn t3_2_acc_equals_src() {
         // acc[i] += acc[i] * s  <=>  acc[i] *= (1 + s)
-        // If acc and src are the same slice, vecadd must read
+        // If acc and src are the same slice, vec_scaled_add_inplace must read
         // the original values before any writes happen.
         let scalar = 3.0 as ScalarType;
         let mut data = vec![
@@ -287,13 +287,13 @@ mod inplace_mutation {
         // Use raw pointer to pass same memory as src and acc (bypass borrow checker)
         let ptr = data.as_mut_ptr();
         let len = data.len();
-        // SAFETY: src and acc point to the same slice, but `vecadd` is
+        // SAFETY: src and acc point to the same slice, but `vec_scaled_add_inplace` is
         // specified to read `src` before writing to `acc` for any given index.
-        // We rely on `vecadd` respecting element-wise read-before-write order.
+        // We rely on `vec_scaled_add_inplace` respecting element-wise read-before-write order.
         let shared_src = unsafe { std::slice::from_raw_parts(ptr as *const ScalarType, len) };
         let shared_acc = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
 
-        vecadd(shared_src, scalar, shared_acc);
+        vec_scaled_add_inplace(shared_src, scalar, shared_acc);
 
         assert_eq!(data, expected, "alias bug: acc != src * (1+scalar)");
     }
@@ -305,12 +305,12 @@ mod inplace_mutation {
         let acc = fill(n, 1.0 as ScalarType);
 
         let mut first_result = acc.clone();
-        vecadd(&src, 0.5 as ScalarType, &mut first_result);
+        vec_scaled_add_inplace(&src, 0.5 as ScalarType, &mut first_result);
 
         // Reset and call again — result must be identical
         for _ in 0..50 {
             let mut acc_copy = fill(n, 1.0 as ScalarType);
-            vecadd(&src, 0.5 as ScalarType, &mut acc_copy);
+            vec_scaled_add_inplace(&src, 0.5 as ScalarType, &mut acc_copy);
             for (i, (&a, &f)) in acc_copy.iter().zip(first_result.iter()).enumerate() {
                 assert!(
                     (a - f).abs() < epsilon(),
@@ -336,7 +336,7 @@ mod simd_vs_scalar {
         let mut acc_neon = init.clone();
         let mut acc_ansi = init.clone();
 
-        vecadd(&src, scalar, &mut acc_neon);
+        vec_scaled_add_inplace(&src, scalar, &mut acc_neon);
         vecadd_oracle(&src, scalar, &mut acc_ansi);
 
         for (i, (&a, &e)) in acc_neon.iter().zip(acc_ansi.iter()).enumerate() {
@@ -381,7 +381,7 @@ mod simd_vs_scalar {
         ];
         let mut expected = acc.clone();
 
-        vecadd(&src, 0.5 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 0.5 as ScalarType, &mut acc);
         vecadd_oracle(&src, 0.5 as ScalarType, &mut expected);
 
         for (i, (&a, &e)) in acc.iter().zip(expected.iter()).enumerate() {
@@ -408,7 +408,7 @@ mod special_values {
     fn t5_1_src_inf_scalar_zero() {
         let src = vec![ScalarType::INFINITY, 1.0 as ScalarType];
         let mut acc = vec![5.0 as ScalarType, 5.0 as ScalarType];
-        vecadd(&src, 0.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 0.0 as ScalarType, &mut acc);
         // 5.0 + INF·0 = 5.0 + NaN = NaN
         assert!(acc[0].is_nan());
         // 5.0 + 1.0·0 = 5.0  (other elements not affected)
@@ -419,7 +419,7 @@ mod special_values {
     fn t5_2_acc_inf_src_zero() {
         let src = vec![0.0 as ScalarType, 1.0 as ScalarType];
         let mut acc = vec![ScalarType::INFINITY, 5.0 as ScalarType];
-        vecadd(&src, 0.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 0.0 as ScalarType, &mut acc);
         // INF + 0·0 = INF (well-defined)
         assert!(acc[0].is_infinite());
         assert!(acc[0].is_sign_positive());
@@ -431,7 +431,7 @@ mod special_values {
     fn t5_3_scalar_nan_broadcast() {
         let src = vec![1.0 as ScalarType; 4];
         let mut acc = vec![0.0 as ScalarType; 4];
-        vecadd(&src, ScalarType::NAN, &mut acc);
+        vec_scaled_add_inplace(&src, ScalarType::NAN, &mut acc);
         for &v in &acc {
             assert!(v.is_nan(), "expected NaN, got {v}");
         }
@@ -441,7 +441,7 @@ mod special_values {
     fn t5_4_negative_zero_src() {
         let src = vec![-0.0_f64 as ScalarType, 1.0 as ScalarType];
         let mut acc = vec![42.0 as ScalarType, 42.0 as ScalarType];
-        vecadd(&src, 3.0 as ScalarType, &mut acc);
+        vec_scaled_add_inplace(&src, 3.0 as ScalarType, &mut acc);
         // -0.0 * 3.0 = -0.0 (sign preserved)
         // 42.0 + (-0.0) = 42.0
         assert_eq!(acc[0], 42.0 as ScalarType);
@@ -501,10 +501,10 @@ mod lbfgs_integration {
             0.3 as ScalarType,
         ];
 
-        // Accumulate via vecadd
+        // Accumulate via vec_scaled_add_inplace
         let mut grad = vec![0.0 as ScalarType; n_features];
         for i in 0..n_samples {
-            vecadd(&features[i], dlosses[i], &mut grad);
+            vec_scaled_add_inplace(&features[i], dlosses[i], &mut grad);
         }
 
         // Manually compute expected gradient
@@ -538,9 +538,9 @@ mod lbfgs_integration {
         // Save regularization contribution
         let reg_only = grad.clone();
 
-        // Add loss gradient via vecadd
+        // Add loss gradient via vec_scaled_add_inplace
         let dloss = 0.5 as ScalarType;
-        vecadd(&src, dloss, &mut grad);
+        vec_scaled_add_inplace(&src, dloss, &mut grad);
 
         // Verify: grad = reg_only + src * dloss
         for j in 0..n {
@@ -570,10 +570,10 @@ mod lbfgs_integration {
             .map(|i| ((i as f64) * 0.01 - 5.0).sin() as ScalarType)
             .collect();
 
-        // vecadd path
+        // vec_scaled_add_inplace path
         let mut grad_vecadd = vec![0.0 as ScalarType; n_features];
         for i in 0..n_samples {
-            vecadd(&samples[i], dlosses[i], &mut grad_vecadd);
+            vec_scaled_add_inplace(&samples[i], dlosses[i], &mut grad_vecadd);
         }
 
         // Oracle path
@@ -591,7 +591,7 @@ mod lbfgs_integration {
             };
             assert!(
                 rel < epsilon() * 10.0,
-                "large scale idx={i}: vecadd={a}, oracle={e}, diff={diff}"
+                "large scale idx={i}: vec_scaled_add_inplace={a}, oracle={e}, diff={diff}"
             );
         }
     }
@@ -612,7 +612,7 @@ mod numeric_stability {
         let mut expected = vec![0.0 as ScalarType; 1];
 
         for _ in 0..n {
-            vecadd(&src[..1], tiny, &mut acc);
+            vec_scaled_add_inplace(&src[..1], tiny, &mut acc);
             vecadd_oracle(&src[..1], tiny, &mut expected);
         }
 
@@ -646,7 +646,7 @@ mod numeric_stability {
         let mut acc_vecadd = init.clone();
         let mut acc_oracle = init.clone();
 
-        vecadd(&src, scalar, &mut acc_vecadd);
+        vec_scaled_add_inplace(&src, scalar, &mut acc_vecadd);
         vecadd_oracle(&src, scalar, &mut acc_oracle);
 
         let mut max_rel_err = 0.0_f64;
