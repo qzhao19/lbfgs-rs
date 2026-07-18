@@ -1,4 +1,4 @@
-use lbfgs_rs::infra::math::kernel::ops_neon::vecdot_neon::vecdot;
+use lbfgs_rs::infra::math::kernel::vec_dot;
 use lbfgs_rs::shared::types::primitives::ScalarType;
 
 // ── Helper utilities ──
@@ -40,7 +40,7 @@ fn approx_eq(got: ScalarType, expected: ScalarType) -> bool {
 }
 
 // T0 — Input validation
-// TODO: Enable these tests after adding `assert_eq!` to `vecdot`.
+// TODO: Enable these tests after adding `assert_eq!` to `vec_dot`.
 // Currently the function uses only `debug_assert_eq!` (ANSI path) and
 // no check (NEON path). Unequal lengths may cause UB in release mode.
 //
@@ -49,7 +49,7 @@ fn approx_eq(got: ScalarType, expected: ScalarType) -> bool {
 // fn t0_1_x_longer_than_y() {
 //     let x = vec![1.0 as ScalarType; 5];
 //     let y = vec![1.0 as ScalarType; 3];
-//     vecdot(&x, &y);
+//     vec_dot(&x, &y);
 // }
 //
 // #[test]
@@ -57,13 +57,13 @@ fn approx_eq(got: ScalarType, expected: ScalarType) -> bool {
 // fn t0_2_y_longer_than_x() {
 //     let x = vec![1.0 as ScalarType; 3];
 //     let y = vec![1.0 as ScalarType; 5];
-//     vecdot(&x, &y);
+//     vec_dot(&x, &y);
 // }
 
 /// T0.3 — Empty vectors should return zero.
 #[test]
 fn t0_3_both_empty() {
-    assert_eq!(vecdot(&[], &[]), 0.0 as ScalarType);
+    assert_eq!(vec_dot(&[], &[]), 0.0 as ScalarType);
 }
 
 // T1 — Basic correctness
@@ -74,7 +74,7 @@ mod basic_correctness {
     fn t1_1_zero_vector() {
         let x = fill(4, 0.0 as ScalarType);
         let y = fill(4, 0.0 as ScalarType);
-        assert_eq!(vecdot(&x, &y), 0.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 0.0 as ScalarType);
     }
 
     #[test]
@@ -91,35 +91,35 @@ mod basic_correctness {
             0.0 as ScalarType,
             0.0 as ScalarType,
         ];
-        assert_eq!(vecdot(&x, &y), 1.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 1.0 as ScalarType);
     }
 
     #[test]
     fn t1_3_orthogonal() {
         let x = vec![1.0 as ScalarType, 0.0 as ScalarType];
         let y = vec![0.0 as ScalarType, 1.0 as ScalarType];
-        assert_eq!(vecdot(&x, &y), 0.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 0.0 as ScalarType);
     }
 
     #[test]
     fn t1_4_known_result() {
         let x = vec![1.0 as ScalarType, 2.0 as ScalarType, 3.0 as ScalarType];
         let y = vec![4.0 as ScalarType, 5.0 as ScalarType, 6.0 as ScalarType];
-        assert_eq!(vecdot(&x, &y), 32.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 32.0 as ScalarType);
     }
 
     #[test]
     fn t1_5_negatives() {
         let x = vec![-1.0 as ScalarType, 2.0 as ScalarType];
         let y = vec![3.0 as ScalarType, -4.0 as ScalarType];
-        assert_eq!(vecdot(&x, &y), -11.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), -11.0 as ScalarType);
     }
 
     #[test]
     fn t1_6_fractional() {
         let x = vec![0.5 as ScalarType, 0.25 as ScalarType];
         let y = vec![2.0 as ScalarType, 4.0 as ScalarType];
-        assert_eq!(vecdot(&x, &y), 2.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 2.0 as ScalarType);
     }
 }
 
@@ -127,7 +127,7 @@ mod basic_correctness {
 mod boundary_alignment {
     use super::*;
 
-    /// Assert vecdot result matches oracle within epsilon.
+    /// Assert vec_dot result matches oracle within epsilon.
     fn assert_dot(len: usize) {
         let x = arange(len);
         let y: Vec<ScalarType> = x
@@ -135,7 +135,7 @@ mod boundary_alignment {
             .map(|&v| v * 2.0 as ScalarType + 1.0 as ScalarType)
             .collect();
         let expected = dot_oracle(&x, &y);
-        let got = vecdot(&x, &y);
+        let got = vec_dot(&x, &y);
         assert!(
             approx_eq(got, expected),
             "len={len}: got {got}, expected {expected}, diff {}",
@@ -237,7 +237,7 @@ mod numeric_stability {
         let big = 1e10 as ScalarType;
         let x = vec![big, big];
         let y = vec![big, big];
-        let result = vecdot(&x, &y);
+        let result = vec_dot(&x, &y);
         assert!(result.is_finite(), "overflow detected: {result}");
     }
 
@@ -246,7 +246,7 @@ mod numeric_stability {
         let tiny = 1e-10 as ScalarType;
         let x = vec![tiny, tiny];
         let y = vec![tiny, tiny];
-        let result = vecdot(&x, &y);
+        let result = vec_dot(&x, &y);
         assert!(result > 0.0 as ScalarType, "underflow to zero: {result}");
     }
 
@@ -256,7 +256,7 @@ mod numeric_stability {
         let tiny = 1e-10 as ScalarType;
         let x = vec![big, tiny];
         let y = vec![tiny, big];
-        let result = vecdot(&x, &y);
+        let result = vec_dot(&x, &y);
         let expected = 2.0 as ScalarType;
         assert!(
             (result - expected).abs() < epsilon(),
@@ -278,7 +278,7 @@ mod numeric_stability {
             1.0 as ScalarType,
             1.0 as ScalarType,
         ];
-        assert_eq!(vecdot(&x, &y), 0.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 0.0 as ScalarType);
     }
 
     #[test]
@@ -286,7 +286,7 @@ mod numeric_stability {
         let len = 10_000;
         let x = arange(len);
         let y: Vec<ScalarType> = x.iter().map(|&v| v * 0.5 as ScalarType).collect();
-        let got = vecdot(&x, &y);
+        let got = vec_dot(&x, &y);
         let expected = dot_oracle(&x, &y);
         assert!(
             approx_eq(got, expected),
@@ -300,7 +300,7 @@ mod numeric_stability {
 mod simd_vs_scalar {
     use super::*;
 
-    /// Assert vecdot matches oracle for random vectors of given length.
+    /// Assert vec_dot matches oracle for random vectors of given length.
     fn assert_consistent(len: usize) {
         // Use a deterministic pseudo-random sequence (not true random)
         let x: Vec<ScalarType> = (0..len)
@@ -316,7 +316,7 @@ mod simd_vs_scalar {
             })
             .collect();
 
-        let got = vecdot(&x, &y);
+        let got = vec_dot(&x, &y);
         let expected = dot_oracle(&x, &y);
         assert!(
             (got - expected).abs() < epsilon(),
@@ -360,7 +360,7 @@ mod simd_vs_scalar {
             0.0 as ScalarType,
             0.0 as ScalarType,
         ];
-        let got = vecdot(&x, &y);
+        let got = vec_dot(&x, &y);
         let expected = dot_oracle(&x, &y);
         // For extreme values, use relative or absolute tolerance
         let diff = (got - expected).abs();
@@ -384,7 +384,7 @@ mod special_values {
     fn t5_1_zero_times_inf_is_nan() {
         let x = vec![0.0 as ScalarType, 0.0 as ScalarType];
         let y = vec![ScalarType::INFINITY, 1.0 as ScalarType];
-        let result = vecdot(&x, &y);
+        let result = vec_dot(&x, &y);
         assert!(result.is_nan(), "0*INF should be NaN, got {result}");
     }
 
@@ -392,7 +392,7 @@ mod special_values {
     fn t5_2_inf_times_zero_is_nan() {
         let x = vec![ScalarType::INFINITY, 0.0 as ScalarType];
         let y = vec![0.0 as ScalarType, 1.0 as ScalarType];
-        let result = vecdot(&x, &y);
+        let result = vec_dot(&x, &y);
         assert!(result.is_nan(), "INF*0 should be NaN, got {result}");
     }
 
@@ -401,13 +401,13 @@ mod special_values {
         let x = vec![-0.0_f64 as ScalarType, 1.0 as ScalarType];
         let y = vec![1.0 as ScalarType, 1.0 as ScalarType];
         // -0.0 * 1.0 + 1.0 * 1.0 = -0.0 + 1.0 = 1.0
-        assert_eq!(vecdot(&x, &y), 1.0 as ScalarType);
+        assert_eq!(vec_dot(&x, &y), 1.0 as ScalarType);
     }
 
     #[test]
     fn t5_4_all_nan() {
         let v = vec![ScalarType::NAN; 4];
-        let result = vecdot(&v, &v);
+        let result = vec_dot(&v, &v);
         assert!(result.is_nan(), "NaN dot NaN should be NaN, got {result}");
     }
 }
@@ -428,7 +428,7 @@ mod lbfgs_integration {
             .map(|i| (i as f64 * 0.003 + 0.1).cos() as ScalarType)
             .collect();
 
-        let y_hat = vecdot(&w, &x);
+        let y_hat = vec_dot(&w, &x);
         let expected = dot_oracle(&w, &x);
         assert!(
             approx_eq(y_hat, expected),
@@ -449,7 +449,7 @@ mod lbfgs_integration {
             .map(|i| (i as f64 * 0.002 + 1.5).cos() as ScalarType)
             .collect();
 
-        let curvature = vecdot(&g, &d);
+        let curvature = vec_dot(&g, &d);
         let expected = dot_oracle(&g, &d);
         assert!(
             approx_eq(curvature, expected),
@@ -465,9 +465,9 @@ mod lbfgs_integration {
         let x = arange(n);
         let y: Vec<ScalarType> = x.iter().rev().copied().collect();
 
-        let first = vecdot(&x, &y);
+        let first = vec_dot(&x, &y);
         for _ in 0..100 {
-            let result = vecdot(&x, &y);
+            let result = vec_dot(&x, &y);
             assert!(
                 (result - first).abs() < epsilon(),
                 "state leak detected: first={first}, got={result}"
