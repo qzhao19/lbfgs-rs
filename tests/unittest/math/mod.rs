@@ -1,2 +1,2 @@
-pub mod test_vecadd;
-pub mod test_vecdot;
+pub mod test_vec_scaled_add_inplace;
+pub mod test_vec_dot;
