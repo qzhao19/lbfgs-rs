@@ -21,8 +21,7 @@ use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
 /// Scalar fused multiply-add: acc[i] += src[i] × scalar — portable fallback.
 #[inline]
-pub fn vecadd_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
-    debug_assert_eq!(src.len(), acc.len(), "vector length mismatch");
+pub fn vec_scaled_add_inplace_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
     let len: usize = src.len();
     for i in 0..len {
         acc[i] = acc[i] + src[i] * scalar;
@@ -36,7 +35,7 @@ pub fn vecadd_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType
     not(target_os = "macos")
 ))]
 #[inline]
-unsafe fn vecadd_neon_float_impl(src: &[f32], scalar: f32, acc: &mut [f32]) {
+unsafe fn vec_scaled_add_inplace_float_impl(src: &[f32], scalar: f32, acc: &mut [f32]) {
     let len: usize = src.len();
 
     // Scalar broadcast to vector register
@@ -97,7 +96,7 @@ unsafe fn vecadd_neon_float_impl(src: &[f32], scalar: f32, acc: &mut [f32]) {
     not(target_os = "macos")
 ))]
 #[inline]
-unsafe fn vecadd_neon_double_impl(src: &[f64], scalar: f64, acc: &mut [f64]) {
+unsafe fn vec_scaled_add_inplace_double_impl(src: &[f64], scalar: f64, acc: &mut [f64]) {
     let len = src.len();
 
     let scalar_v = vdupq_n_f64(scalar);
@@ -137,7 +136,9 @@ unsafe fn vecadd_neon_double_impl(src: &[f64], scalar: f64, acc: &mut [f64]) {
 // ── Dispatch wrappers ──
 
 /// Element-wise fused multiply-add: acc[i] += src[i] × scalar.
-pub fn vecadd(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
+pub fn vec_scaled_add_inplace(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
+    debug_assert_eq!(src.len(), acc.len(), "vector length mismatch");
+
     #[cfg(all(
         target_arch = "aarch64",
         feature = "neon",
@@ -145,7 +146,7 @@ pub fn vecadd(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
         not(target_os = "macos")
     ))]
     unsafe {
-        vecadd_neon_double_impl(src, scalar, acc);
+        vec_scaled_add_inplace_double_impl(src, scalar, acc);
     }
 
     #[cfg(all(
@@ -155,12 +156,12 @@ pub fn vecadd(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
         not(target_os = "macos")
     ))]
     unsafe {
-        vecadd_neon_float_impl(src, scalar, acc);
+        vec_scaled_add_inplace_float_impl(src, scalar, acc);
     }
 
     #[cfg(any(
         not(all(target_arch = "aarch64", feature = "neon")),
         target_os = "macos"
     ))]
-    vecadd_ansi(src, scalar, acc);
+    vec_scaled_add_inplace_ansi(src, scalar, acc);
 }
