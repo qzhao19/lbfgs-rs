@@ -22,7 +22,6 @@ use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 ///  Scalar dot product
 #[inline]
 fn vec_dot_ansi(x: &[ScalarType], y: &[ScalarType]) -> ScalarType {
-    debug_assert_eq!(x.len(), y.len(), "vector length mismatch");
     let len: usize = x.len();
     let mut sum = 0.0 as ScalarType;
     for i in 0..len {
@@ -48,31 +47,31 @@ unsafe fn vec_dot_float_impl(x: &[f32], y: &[f32]) -> f32 {
     let mut acc2 = vdupq_n_f32(0.0);
     let mut acc3 = vdupq_n_f32(0.0);
 
-    let xptr = x.as_ptr();
-    let yptr = y.as_ptr();
+    let x_ptr = x.as_ptr();
+    let y_ptr = y.as_ptr();
 
     let step: usize = FTYPE_LANES * FTYPE_UNROLL;
     let chunks: usize = len / step;
 
     let mut i: usize = 0usize;
     for _ in 0..chunks {
-        let x0 = vld1q_f32(xptr.add(i));
-        let y0 = vld1q_f32(yptr.add(i));
+        let x0 = vld1q_f32(x_ptr.add(i));
+        let y0 = vld1q_f32(y_ptr.add(i));
         acc0 = vfmaq_f32(acc0, x0, y0);
         i += FTYPE_LANES;
 
-        let x1 = vld1q_f32(xptr.add(i));
-        let y1 = vld1q_f32(yptr.add(i));
+        let x1 = vld1q_f32(x_ptr.add(i));
+        let y1 = vld1q_f32(y_ptr.add(i));
         acc1 = vfmaq_f32(acc1, x1, y1);
         i += FTYPE_LANES;
 
-        let x2 = vld1q_f32(xptr.add(i));
-        let y2 = vld1q_f32(yptr.add(i));
+        let x2 = vld1q_f32(x_ptr.add(i));
+        let y2 = vld1q_f32(y_ptr.add(i));
         acc2 = vfmaq_f32(acc2, x2, y2);
         i += FTYPE_LANES;
 
-        let x3 = vld1q_f32(xptr.add(i));
-        let y3 = vld1q_f32(yptr.add(i));
+        let x3 = vld1q_f32(x_ptr.add(i));
+        let y3 = vld1q_f32(y_ptr.add(i));
         acc3 = vfmaq_f32(acc3, x3, y3);
         i += FTYPE_LANES;
     }
@@ -80,8 +79,8 @@ unsafe fn vec_dot_float_impl(x: &[f32], y: &[f32]) -> f32 {
     // Handling remaining blocks that are less than 4-way
     // but still fill one vector width.
     while i + FTYPE_LANES <= len {
-        let xv = vld1q_f32(xptr.add(i));
-        let yv = vld1q_f32(yptr.add(i));
+        let xv = vld1q_f32(x_ptr.add(i));
+        let yv = vld1q_f32(y_ptr.add(i));
         acc0 = vfmaq_f32(acc0, xv, yv);
         i += FTYPE_LANES;
     }
@@ -97,7 +96,7 @@ unsafe fn vec_dot_float_impl(x: &[f32], y: &[f32]) -> f32 {
     // Handle remaining elements at the end
     // that are less than one vector width
     while i < len {
-        sum += *xptr.add(i) * *yptr.add(i);
+        sum += *x_ptr.add(i) * *y_ptr.add(i);
         i += 1;
     }
 
@@ -118,28 +117,28 @@ unsafe fn vec_dot_double_impl(x: &[f64], y: &[f64]) -> f64 {
     let mut acc0 = vdupq_n_f64(0.0);
     let mut acc1 = vdupq_n_f64(0.0);
 
-    let xptr = x.as_ptr();
-    let yptr = y.as_ptr();
+    let x_ptr = x.as_ptr();
+    let y_ptr = y.as_ptr();
 
     let step = DTYPE_LANES * DTYPE_UNROLL;
     let chunks = len / step;
 
     let mut i: usize = 0usize;
     for _ in 0..chunks {
-        let x0 = vld1q_f64(xptr.add(i));
-        let y0 = vld1q_f64(yptr.add(i));
+        let x0 = vld1q_f64(x_ptr.add(i));
+        let y0 = vld1q_f64(y_ptr.add(i));
         acc0 = vfmaq_f64(acc0, x0, y0);
         i += DTYPE_LANES;
 
-        let x1 = vld1q_f64(xptr.add(i));
-        let y1 = vld1q_f64(yptr.add(i));
+        let x1 = vld1q_f64(x_ptr.add(i));
+        let y1 = vld1q_f64(y_ptr.add(i));
         acc1 = vfmaq_f64(acc1, x1, y1);
         i += DTYPE_LANES;
     }
 
     while i + DTYPE_LANES <= len {
-        let xv = vld1q_f64(xptr.add(i));
-        let yv = vld1q_f64(yptr.add(i));
+        let xv = vld1q_f64(x_ptr.add(i));
+        let yv = vld1q_f64(y_ptr.add(i));
         acc0 = vfmaq_f64(acc0, xv, yv);
         i += DTYPE_LANES;
     }
@@ -148,7 +147,7 @@ unsafe fn vec_dot_double_impl(x: &[f64], y: &[f64]) -> f64 {
     let mut sum = vaddvq_f64(acc);
 
     while i < len {
-        sum += *xptr.add(i) * *yptr.add(i);
+        sum += *x_ptr.add(i) * *y_ptr.add(i);
         i += 1;
     }
 
@@ -160,6 +159,8 @@ unsafe fn vec_dot_double_impl(x: &[f64], y: &[f64]) -> f64 {
 /// Compute the dot product of two vectors.
 /// Automatically selects NEON or scalar path at compile time.
 pub fn vec_dot(x: &[ScalarType], y: &[ScalarType]) -> ScalarType {
+    debug_assert_eq!(x.len(), y.len(), "vector length mismatch");
+
     // NEON f64 path
     #[cfg(all(
         target_arch = "aarch64",
