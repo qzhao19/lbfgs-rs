@@ -19,7 +19,7 @@ use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
 ))]
 use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
 
-/// Scalar fused multiply-add: acc[i] += src[i] × scalar — portable fallback.
+/// Scalar fused multiply-add: acc[i] += src[i] × scalar.
 #[inline]
 pub fn vec_scaled_add_inplace_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
     let len: usize = src.len();
