@@ -1,7 +1,7 @@
 use super::super::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::kernel::ops_neon::vecadd_neon::vecadd;
-use crate::infra::math::kernel::ops_neon::vecdot_neon::vecdot;
+use crate::infra::math::kernel::vec_dot;
+use crate::infra::math::kernel::vec_scaled_add_inplace;
 use crate::shared::types::primitives::{FeatureType, LabelType, ScalarType};
 
 pub struct LogLoss;
@@ -10,9 +10,9 @@ impl LogLoss {
     pub fn new() -> Self {
         Self {}
     }
-}
 
-impl LossFunc for LogLoss {
+    /// Compute loss for a single sample
+    #[inline]
     fn evaluate(&self, y_pred: FeatureType, y_true: LabelType) -> ScalarType {
         let z = y_pred * y_true;
         if z > 18.0 {
@@ -24,6 +24,8 @@ impl LossFunc for LogLoss {
         return (-z).exp().ln_1p();
     }
 
+    /// Compute gradient of loss
+    #[inline]
     fn derivate(&self, y_pred: FeatureType, y_true: LabelType) -> ScalarType {
         let z = y_pred * y_true;
         if z > 18.0 {
@@ -36,7 +38,9 @@ impl LossFunc for LogLoss {
 
         return -y_true / (z.exp() + 1.0);
     }
+}
 
+impl LossFunc for LogLoss {
     fn evaluate_with_gradient(
         &mut self,
         dataset: &dyn Dataset,
@@ -54,15 +58,17 @@ impl LossFunc for LogLoss {
             dataset.fill_x_row(i, &mut buf);
 
             // Compute h_hat = dot(x_i, w)
-            let y_hat: FeatureType = vecdot(&buf, w);
+            let y_hat: FeatureType = vec_dot(&buf, w);
 
             // Get relative label
             let y_true = dataset.y_row(i);
+
+            // acc_loss += loss
             loss += self.evaluate(y_hat, y_true);
-            let dloss = self.derivate(y_hat, y_true);
+            let dloss: ScalarType = self.derivate(y_hat, y_true);
 
             // grad += dloss * x_i
-            vecadd(&buf, dloss, grad);
+            vec_scaled_add_inplace(&buf, dloss, grad);
         }
 
         return loss;
