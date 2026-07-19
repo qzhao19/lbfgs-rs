@@ -149,8 +149,8 @@ pub fn vec_scaled_add(
     scalar: ScalarType,
     out: &mut [ScalarType],
 ) {
-    assert_eq!(x.len(), y.len(), "x and y must have the same length");
-    assert_eq!(
+    debug_assert_eq!(x.len(), y.len(), "x and y must have the same length");
+    debug_assert_eq!(
         x.len(),
         out.len(),
         "output vector must have the same length as input"
