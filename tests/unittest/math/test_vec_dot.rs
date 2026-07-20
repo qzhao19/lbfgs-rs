@@ -40,25 +40,21 @@ fn approx_eq(got: ScalarType, expected: ScalarType) -> bool {
 }
 
 // T0 — Input validation
-// TODO: Enable these tests after adding `assert_eq!` to `vec_dot`.
-// Currently the function uses only `debug_assert_eq!` (ANSI path) and
-// no check (NEON path). Unequal lengths may cause UB in release mode.
-//
-// #[test]
-// #[should_panic(expected = "length mismatch")]
-// fn t0_1_x_longer_than_y() {
-//     let x = vec![1.0 as ScalarType; 5];
-//     let y = vec![1.0 as ScalarType; 3];
-//     vec_dot(&x, &y);
-// }
-//
-// #[test]
-// #[should_panic(expected = "length mismatch")]
-// fn t0_2_y_longer_than_x() {
-//     let x = vec![1.0 as ScalarType; 3];
-//     let y = vec![1.0 as ScalarType; 5];
-//     vec_dot(&x, &y);
-// }
+#[test]
+#[should_panic(expected = "length mismatch")]
+fn t0_1_x_longer_than_y() {
+    let x = vec![1.0 as ScalarType; 5];
+    let y = vec![1.0 as ScalarType; 3];
+    vec_dot(&x, &y);
+}
+
+#[test]
+#[should_panic(expected = "length mismatch")]
+fn t0_2_y_longer_than_x() {
+    let x = vec![1.0 as ScalarType; 3];
+    let y = vec![1.0 as ScalarType; 5];
+    vec_dot(&x, &y);
+}
 
 /// T0.3 — Empty vectors should return zero.
 #[test]
