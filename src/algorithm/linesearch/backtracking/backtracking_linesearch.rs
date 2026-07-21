@@ -94,26 +94,33 @@ impl LineSearch for BacktrackingLineSearch {
             // Increment iteration
             count += 1;
 
-            // Armijo / Wolfe condition logic
+            // Armijo / (strong) Wolfe condition logic
             let width: ScalarType = if *fx > fx_init + *stepsize * dg_test {
                 // If Armijo condition not satisfied
                 self.search_param.dec_factor
-            } else if self.search_param.condition == LineSearchCondition::Armijo {
-                return Ok(count);
             } else {
+
+                if self.search_param.condition == LineSearchCondition::Armijo {
+                    return Ok(count);
+                }
+                
                 // Compute derivative at new x
                 let dg: ScalarType = vec_dot(d, g);
                 if dg < self.search_param.wolfe * dg_init {
                     // Wolfe condition not satisfied - grow step
                     self.search_param.inc_factor
-                } else if self.search_param.condition == LineSearchCondition::Wolfe {
-                    return Ok(count);
-                } else if dg > -self.search_param.wolfe * dg_init {
-                    // Strong Wolfe not satisfied - shrink step
-                    self.search_param.dec_factor
                 } else {
-                    // Both Armijo and (strong) Wolfe satisfied
-                    return Ok(count);
+                    if self.search_param.condition == LineSearchCondition::Wolfe {
+                        return Ok(count);
+                    } 
+
+                    if dg > -self.search_param.wolfe * dg_init {
+                        // Strong Wolfe not satisfied - shrink step
+                        self.search_param.dec_factor
+                    } else {
+                        // Both Armijo and (strong) Wolfe satisfied
+                        return Ok(count);
+                    }
                 }
             };
 
