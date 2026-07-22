@@ -2,8 +2,9 @@ use super::super::linesearch::LineSearch;
 use crate::algorithm::loss::LossFunc;
 use crate::data::dataset::Dataset;
 use crate::infra::math::kernel::{vec_dot, vec_scale, vec_scaled_add};
+use crate::shared::parameters::linesearch::LineSearchParam;
+use crate::shared::types::enums::LineSearchCondition;
 use crate::shared::types::error::LbfgsError;
-use crate::shared::types::linesearch::{LineSearchCondition, LineSearchParamType};
 use crate::shared::types::primitives::{FeatureType, ScalarType};
 
 pub struct BacktrackingLineSearch {
@@ -14,14 +15,14 @@ pub struct BacktrackingLineSearch {
     pub loss_fn: Box<dyn LossFunc>,
 
     /// Linesearch hyperparameters
-    pub search_param: LineSearchParamType,
+    pub search_param: LineSearchParam,
 }
 
 impl BacktrackingLineSearch {
     pub fn new<DatasetType, LossFuncType>(
         dataset: DatasetType,
         loss_fn: LossFuncType,
-        search_param: LineSearchParamType,
+        search_param: LineSearchParam,
     ) -> Self
     where
         DatasetType: Dataset + 'static,
@@ -99,11 +100,10 @@ impl LineSearch for BacktrackingLineSearch {
                 // If Armijo condition not satisfied
                 self.search_param.dec_factor
             } else {
-
                 if self.search_param.condition == LineSearchCondition::Armijo {
                     return Ok(count);
                 }
-                
+
                 // Compute derivative at new x
                 let dg: ScalarType = vec_dot(d, g);
                 if dg < self.search_param.wolfe * dg_init {
@@ -112,7 +112,7 @@ impl LineSearch for BacktrackingLineSearch {
                 } else {
                     if self.search_param.condition == LineSearchCondition::Wolfe {
                         return Ok(count);
-                    } 
+                    }
 
                     if dg > -self.search_param.wolfe * dg_init {
                         // Strong Wolfe not satisfied - shrink step
@@ -131,7 +131,7 @@ impl LineSearch for BacktrackingLineSearch {
             if *stepsize > self.search_param.max_stepsize {
                 return Err(LbfgsError::MaximumStep);
             }
-            if count >= self.search_param.max_searches {
+            if count >= self.search_param.max_linesearch_iters {
                 return Err(LbfgsError::MaximumLineSearch);
             }
 
