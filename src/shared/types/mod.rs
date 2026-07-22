@@ -1,3 +1,3 @@
 pub mod error;
-pub mod linesearch;
+pub mod enums;
 pub mod primitives;
