@@ -2,8 +2,9 @@ use super::super::linesearch::LineSearch;
 use crate::algorithm::loss::LossFunc;
 use crate::data::dataset::Dataset;
 use crate::infra::math::kernel::{vec_dot, vec_scale, vec_scaled_add};
+use crate::shared::parameters::linesearch::LineSearchParam;
+use crate::shared::types::enums::LineSearchCondition;
 use crate::shared::types::error::LbfgsError;
-use crate::shared::types::linesearch::{LineSearchCondition, LineSearchParamType};
 use crate::shared::types::primitives::{FeatureType, ScalarType};
 
 pub struct BracketingLineSearch {
@@ -14,14 +15,14 @@ pub struct BracketingLineSearch {
     pub loss_fn: Box<dyn LossFunc>,
 
     /// Linesearch hyperparameters
-    pub search_param: LineSearchParamType,
+    pub search_param: LineSearchParam,
 }
 
 impl BracketingLineSearch {
     pub fn new<DatasetType, LossFuncType>(
         dataset: DatasetType,
         loss_fn: LossFuncType,
-        search_param: LineSearchParamType,
+        search_param: LineSearchParam,
     ) -> Self
     where
         DatasetType: Dataset + 'static,
@@ -133,7 +134,7 @@ impl LineSearch for BracketingLineSearch {
             if *stepsize > self.search_param.max_stepsize {
                 return Err(LbfgsError::MaximumStep);
             }
-            if count >= self.search_param.max_searches {
+            if count >= self.search_param.max_linesearch_iters {
                 return Err(LbfgsError::MaximumLineSearch);
             }
 
