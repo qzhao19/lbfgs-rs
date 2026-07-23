@@ -1,9 +1,9 @@
-use crate::shared::types::primitives::{FeatureType, LabelType};
+use crate::shared::types::{FeatureType, LabelType};
 
 pub trait Dataset {
     fn nrows(&self) -> usize;
     fn ncols(&self) -> usize;
-    
+
     // Fill `buffer` with the i‑th instance row.
     fn fill_x_row(&self, i: usize, buf: &mut [FeatureType]);
 
