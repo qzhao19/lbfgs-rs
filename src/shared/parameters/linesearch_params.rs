@@ -1,4 +1,4 @@
-use crate::shared::types::enums::LineSearchCondition;
+use crate::shared::enums::lbfgs_options::LineSearchCondition;
 use crate::shared::types::primitives::ScalarType;
 
 /// Parameters controlling line-search behavior in L-BFGS.
