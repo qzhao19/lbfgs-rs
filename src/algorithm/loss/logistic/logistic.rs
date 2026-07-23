@@ -1,8 +1,7 @@
 use super::super::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::kernel::vec_dot;
-use crate::infra::math::kernel::vec_scaled_add_inplace;
-use crate::shared::types::primitives::{FeatureType, LabelType, ScalarType};
+use crate::infra::math::ops_neon::{vec_dot, vec_scaled_add_inplace};
+use crate::shared::types::{FeatureType, LabelType, ScalarType};
 
 pub struct LogLoss;
 
