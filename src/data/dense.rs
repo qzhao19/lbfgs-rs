@@ -1,5 +1,5 @@
 use super::dataset::Dataset;
-use crate::shared::types::primitives::{FeatureType, LabelType};
+use crate::shared::types::{FeatureType, LabelType};
 
 pub struct DenseDataset {
     /// Row-major matrix：X[r, c] = x_data[r * ncols + c]
@@ -124,7 +124,7 @@ impl Dataset for DenseDataset {
     fn ncols(&self) -> usize {
         return self.ncols;
     }
-    
+
     fn fill_x_row(&self, i: usize, buf: &mut [FeatureType]) {
         self.fill_x_row(i, buf);
     }
