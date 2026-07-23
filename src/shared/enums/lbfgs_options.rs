@@ -7,7 +7,7 @@ pub enum LossType {
 
 /// Line-search strategy variants.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SearchPolicy {
+pub enum LineSearchPolicy {
     Backtracking,
     Bracketing,
 }
