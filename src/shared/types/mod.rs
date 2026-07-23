@@ -1,3 +1,2 @@
-pub mod error;
-pub mod enums;
 pub mod primitives;
+pub use primitives::{FeatureType, LabelType, ScalarType};
