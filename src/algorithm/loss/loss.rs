@@ -1,5 +1,5 @@
 use crate::data::dataset::Dataset;
-use crate::shared::types::primitives::{FeatureType, ScalarType};
+use crate::shared::types::{FeatureType, ScalarType};
 
 pub trait LossFunc {
     /// Compute total loss and accumulate gradients over the entire dataset.
