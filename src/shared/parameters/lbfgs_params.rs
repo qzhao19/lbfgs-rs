@@ -1,5 +1,5 @@
-use super::linesearch::LineSearchParam;
-use crate::shared::types::enums::{LossType, SearchPolicy};
+use super::linesearch_params::LineSearchParam;
+use crate::shared::enums::lbfgs_options::{LineSearchPolicy, LossType};
 use crate::shared::types::primitives::ScalarType;
 
 /// Top-level parameters for an L-BFGS optimisation run.
@@ -8,7 +8,7 @@ pub struct LbfgsParams {
     pub loss: LossType,
 
     /// Line-search strategy used inside each outer iteration.
-    pub search_policy: SearchPolicy,
+    pub linesearch_policy: LineSearchPolicy,
 
     // ── Convergence criteria ──
     /// Function-value convergence threshold:
@@ -41,7 +41,7 @@ impl LbfgsParams {
         Self {
             // Default
             loss: LossType::LogLoss,
-            search_policy: SearchPolicy::Backtracking,
+            linesearch_policy: LineSearchPolicy::Backtracking,
 
             // Convergence thresholds.
             // |f' - f| / max(1, |f|) < delta
@@ -51,10 +51,10 @@ impl LbfgsParams {
 
             // Outer loop.
             max_iters: 100,
-            
+
             // m = 8: standard L-BFGS correction-pair count.
             mem_size: 8,
-                        
+
             // Set past >= 1 to enable |f' - f|/max(1,|f|) < delta.
             // only the gradient (epsilon) test is active by default.
             past: 3,
