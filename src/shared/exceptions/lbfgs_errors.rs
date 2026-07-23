@@ -8,6 +8,8 @@ pub enum LbfgsStatus {
     Stop = 1,
     /// The iteration has been canceled by the monitor callback.
     Canceled = 2,
+    /// ALREADY_MINIMIZED
+    AlreadyMinimized = 3,
 }
 
 /// Error codes returned by L-BFGS routines
@@ -45,7 +47,7 @@ pub enum LbfgsError {
     /// The line-search step became larger than max_step.
     MaximumStep,
     /// Line search reaches the maximum, assumptions not satisfied or precision not achievable.
-    MaximumLineSearch,
+    MaximumLineSearchIteration,
     /// The algorithm routine reaches the maximum number of iterations.
     MaximumIteration,
     /// Relative search interval width is at least machine_prec.
