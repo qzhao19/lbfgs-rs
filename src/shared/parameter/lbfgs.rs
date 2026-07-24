@@ -1,6 +1,19 @@
-use super::linesearch_params::LineSearchParam;
-use crate::shared::enums::lbfgs_options::{LineSearchPolicy, LossType};
-use crate::shared::types::primitives::ScalarType;
+use super::linesearch::LineSearchParam;
+use crate::shared::numeric::scalar::ScalarType;
+
+/// Loss function variants available to the L-BFGS driver.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LossType {
+    /// Logistic loss (binary classification, labels ±1).
+    LogLoss,
+}
+
+/// Line-search strategy variants.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LineSearchPolicy {
+    Backtracking,
+    Bracketing,
+}
 
 /// Top-level parameters for an L-BFGS optimisation run.
 pub struct LbfgsParams {
@@ -33,7 +46,10 @@ pub struct LbfgsParams {
 
     // ── Line-search sub-parameters ──
     /// Parameters forwarded to the chosen line-search strategy.
-    pub linesearch: LineSearchParam,
+    pub linesearch_params: LineSearchParam,
+
+    ///
+    pub verbose: bool,
 }
 
 impl LbfgsParams {
@@ -59,7 +75,9 @@ impl LbfgsParams {
             // only the gradient (epsilon) test is active by default.
             past: 3,
 
-            linesearch: LineSearchParam::default(),
+            linesearch_params: LineSearchParam::default(),
+
+            verbose: false,
         }
     }
 }
