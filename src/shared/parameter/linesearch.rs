@@ -1,5 +1,12 @@
-use crate::shared::enums::lbfgs_options::LineSearchCondition;
-use crate::shared::types::primitives::ScalarType;
+use crate::shared::numeric::scalar::ScalarType;
+
+/// Acceptance condition for the line search.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LineSearchCondition {
+    Armijo,
+    Wolfe,
+    StrongWolfe,
+}
 
 /// Parameters controlling line-search behavior in L-BFGS.
 #[derive(Clone, Copy)]
