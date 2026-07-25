@@ -1,5 +1,5 @@
 use super::dataset::Dataset;
-use crate::shared::types::{FeatureType, LabelType};
+use crate::shared::numeric::{FeatureType, LabelType};
 
 pub struct DenseDataset {
     /// Row-major matrix：X[r, c] = x_data[r * ncols + c]
