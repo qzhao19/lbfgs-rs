@@ -1,4 +1,4 @@
-use crate::shared::types::primitives::ScalarType;
+use crate::shared::numeric::ScalarType;
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", not(target_os = "macos")))]
 use std::arch::aarch64::*;
@@ -9,7 +9,7 @@ use std::arch::aarch64::*;
     feature = "f32",
     not(target_os = "macos")
 ))]
-use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
+use crate::shared::arch::simd::{FTYPE_LANES, FTYPE_UNROLL};
 
 #[cfg(all(
     target_arch = "aarch64",
@@ -17,11 +17,11 @@ use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
     feature = "f64",
     not(target_os = "macos")
 ))]
-use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
+use crate::shared::arch::simd::{DTYPE_LANES, DTYPE_UNROLL};
 
 /// Scalar fused multiply-add: acc[i] += src[i] × scalar.
 #[inline]
-pub fn vec_scaled_add_inplace_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
+fn vec_scaled_add_inplace_ansi(src: &[ScalarType], scalar: ScalarType, acc: &mut [ScalarType]) {
     let len: usize = src.len();
     for i in 0..len {
         acc[i] = acc[i] + src[i] * scalar;
