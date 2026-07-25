@@ -1,7 +1,7 @@
 use super::super::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::ops_neon::{vec_dot, vec_scaled_add_inplace};
-use crate::shared::types::{FeatureType, LabelType, ScalarType};
+use crate::infra::math::ops_neon::{vec_dot, vec_scale_inplace, vec_scaled_add_inplace};
+use crate::shared::numeric::{FeatureType, LabelType, ScalarType};
 
 pub struct LogLoss;
 
@@ -43,21 +43,23 @@ impl LossFunc for LogLoss {
     fn evaluate_with_gradient(
         &mut self,
         dataset: &dyn Dataset,
-        w: &[FeatureType],
-        grad: &mut [FeatureType],
+        w: &[ScalarType],
+        grad: &mut [ScalarType],
     ) -> ScalarType {
         let n_samples: usize = dataset.nrows();
         let n_features: usize = dataset.ncols();
+        let inv_n_samples: ScalarType = 1.0 as ScalarType / n_samples as ScalarType;
 
         let mut loss: ScalarType = 0.0;
-        let mut buf: Vec<FeatureType> = vec![0.0; n_features];
+        let mut row_buf: Vec<ScalarType> = vec![0.0; n_features];
 
+        grad.fill(0.0);
         for i in 0..n_samples {
             // Get i-th row sample
-            dataset.fill_x_row(i, &mut buf);
+            dataset.fill_x_row(i, &mut row_buf);
 
             // Compute h_hat = dot(x_i, w)
-            let y_hat: FeatureType = vec_dot(&buf, w);
+            let y_hat: ScalarType = vec_dot(&row_buf, w);
 
             // Get relative label
             let y_true = dataset.y_row(i);
@@ -66,10 +68,12 @@ impl LossFunc for LogLoss {
             loss += self.evaluate(y_hat, y_true);
             let dloss: ScalarType = self.derivate(y_hat, y_true);
 
-            // grad += dloss * x_i
-            vec_scaled_add_inplace(&buf, dloss, grad);
+            // grad += dloss * x
+            vec_scaled_add_inplace(&row_buf, dloss, grad);
         }
 
-        return loss;
+        vec_scale_inplace(grad, inv_n_samples);
+
+        return loss * inv_n_samples;
     }
 }
