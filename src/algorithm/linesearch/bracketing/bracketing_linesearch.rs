@@ -1,11 +1,10 @@
 use super::super::linesearch::LineSearch;
 use crate::algorithm::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::kernel::{vec_dot, vec_scale, vec_scaled_add};
-use crate::shared::parameters::linesearch::LineSearchParam;
-use crate::shared::types::enums::LineSearchCondition;
-use crate::shared::types::error::LbfgsError;
-use crate::shared::types::primitives::{FeatureType, ScalarType};
+use crate::infra::math::ops_neon::{vec_dot, vec_scaled_add};
+use crate::shared::exception::LbfgsError;
+use crate::shared::numeric::{FeatureType, ScalarType};
+use crate::shared::parameter::{LineSearchCondition, LineSearchParam};
 
 pub struct BracketingLineSearch {
     /// Dataset reference owned by linesearch
@@ -15,14 +14,14 @@ pub struct BracketingLineSearch {
     pub loss_fn: Box<dyn LossFunc>,
 
     /// Linesearch hyperparameters
-    pub search_param: LineSearchParam,
+    pub linesearch_params: LineSearchParam,
 }
 
 impl BracketingLineSearch {
     pub fn new<DatasetType, LossFuncType>(
         dataset: DatasetType,
         loss_fn: LossFuncType,
-        search_param: LineSearchParam,
+        linesearch_params: LineSearchParam,
     ) -> Self
     where
         DatasetType: Dataset + 'static,
@@ -31,7 +30,7 @@ impl BracketingLineSearch {
         Self {
             dataset: Box::new(dataset),
             loss_fn: Box::new(loss_fn),
-            search_param,
+            linesearch_params,
         }
     }
 }
@@ -47,10 +46,6 @@ impl LineSearch for BracketingLineSearch {
         fx: &mut ScalarType,
         stepsize: &mut ScalarType,
     ) -> Result<usize, LbfgsError> {
-        let n_samples: usize = self.dataset.nrows();
-        let n_features: usize = self.dataset.ncols();
-        let inv_n_samples: ScalarType = 1.0 as ScalarType / n_samples as ScalarType;
-
         // step must be positive
         if *stepsize <= 0.0 {
             return Err(LbfgsError::InvalidParameters);
@@ -67,33 +62,19 @@ impl LineSearch for BracketingLineSearch {
         }
 
         // Tolerance threshold: the minimum descent
-        let dg_test = self.search_param.ftol * dg_init;
+        let dg_test = self.linesearch_params.ftol * dg_init;
 
         // Bracketing interval [stepsize_lo, stepsize_hi]
         let mut stepsize_hi: ScalarType = ScalarType::INFINITY;
         let mut stepsize_lo: ScalarType = 0.0;
-
-        // Local buffer to restore accumulated gradient
-        let mut acc_grad: Vec<ScalarType> = vec![0.0; n_features];
 
         let mut count: usize = 0;
         loop {
             // x_{k+1} = x_k + stepsize * d_k
             vec_scaled_add(d, xp, *stepsize, x);
 
-            // Reset gradient buffer
-            acc_grad.fill(0.0);
-
             // Compute acc loss and gradient at the new X
-            let mut acc_loss: ScalarType =
-                self.loss_fn
-                    .evaluate_with_gradient(&*self.dataset, x, &mut acc_grad);
-
-            // Normalize accumulated loss and gradient
-            acc_loss *= inv_n_samples;
-            vec_scale(&acc_grad, inv_n_samples, g);
-
-            *fx = acc_loss;
+            *fx = self.loss_fn.evaluate_with_gradient(&*self.dataset, x, g);
 
             // Increment iteration
             count += 1;
@@ -103,21 +84,21 @@ impl LineSearch for BracketingLineSearch {
                 // Armijo condition not satisfied: step too large, shrink upper bound
                 stepsize_hi = *stepsize
             } else {
-                if self.search_param.condition == LineSearchCondition::Armijo {
+                if self.linesearch_params.condition == LineSearchCondition::Armijo {
                     return Ok(count);
                 }
 
                 let dg: ScalarType = vec_dot(d, g);
-                if dg < self.search_param.wolfe * dg_init {
+                if dg < self.linesearch_params.wolfe * dg_init {
                     // Wolfe condition not satisfied - step too small, raise lower bound
                     stepsize_lo = *stepsize;
                 } else {
-                    if self.search_param.condition == LineSearchCondition::Wolfe {
+                    if self.linesearch_params.condition == LineSearchCondition::Wolfe {
                         return Ok(count);
                     }
 
                     // Check strong wolfe condition
-                    if dg > -self.search_param.wolfe * dg_init {
+                    if dg > -self.linesearch_params.wolfe * dg_init {
                         // Strong Wolfe not satisfied - step too large, shrink upper bound
                         stepsize_hi = *stepsize;
                     } else {
@@ -128,14 +109,14 @@ impl LineSearch for BracketingLineSearch {
             }
 
             // Bounds checks
-            if *stepsize < self.search_param.min_stepsize {
+            if *stepsize < self.linesearch_params.min_stepsize {
                 return Err(LbfgsError::MinimumStep);
             }
-            if *stepsize > self.search_param.max_stepsize {
+            if *stepsize > self.linesearch_params.max_stepsize {
                 return Err(LbfgsError::MaximumStep);
             }
-            if count >= self.search_param.max_linesearch_iters {
-                return Err(LbfgsError::MaximumLineSearch);
+            if count >= self.linesearch_params.max_linesearch_iters {
+                return Err(LbfgsError::MaximumLineSearchIteration);
             }
 
             // Update step size: double while the upper bound is still +INF,
