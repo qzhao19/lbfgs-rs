@@ -1,4 +1,4 @@
-use crate::shared::types::{FeatureType, LabelType};
+use crate::shared::numeric::{FeatureType, LabelType};
 
 pub trait Dataset {
     fn nrows(&self) -> usize;
