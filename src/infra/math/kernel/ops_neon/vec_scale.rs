@@ -1,4 +1,4 @@
-use crate::shared::types::primitives::ScalarType;
+use crate::shared::numeric::ScalarType;
 
 #[cfg(all(target_arch = "aarch64", feature = "neon", not(target_os = "macos")))]
 use std::arch::aarch64::*;
@@ -9,7 +9,7 @@ use std::arch::aarch64::*;
     feature = "f32",
     not(target_os = "macos")
 ))]
-use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
+use crate::shared::arch::simd::{FTYPE_LANES, FTYPE_UNROLL};
 
 #[cfg(all(
     target_arch = "aarch64",
@@ -17,7 +17,7 @@ use crate::shared::constants::simd_params::{FTYPE_LANES, FTYPE_UNROLL};
     feature = "f64",
     not(target_os = "macos")
 ))]
-use crate::shared::constants::simd_params::{DTYPE_LANES, DTYPE_UNROLL};
+use crate::shared::arch::simd::{DTYPE_LANES, DTYPE_UNROLL};
 
 #[inline]
 fn vec_scale_ansi(x: &[ScalarType], scalar: ScalarType, out: &mut [ScalarType]) {
