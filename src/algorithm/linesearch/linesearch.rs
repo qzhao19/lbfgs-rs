@@ -1,5 +1,5 @@
-use crate::shared::types::error::LbfgsError;
-use crate::shared::types::primitives::{FeatureType, ScalarType};
+use crate::shared::exception::LbfgsError;
+use crate::shared::numeric::{FeatureType, ScalarType};
 
 pub trait LineSearch {
     /// Returns the number of function evaluations on success.
