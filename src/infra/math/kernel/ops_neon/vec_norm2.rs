@@ -158,6 +158,8 @@ unsafe fn vec_norm2_double_impl(x: &[f64], squared: bool) -> f64 {
 /// - `squared == true`  → returns `Σ x[i]²`  (squared L2 norm)
 /// - `squared == false` → returns `sqrt(Σ x[i]²)`  (the L2 norm itself)
 pub fn vec_norm2(x: &[ScalarType], squared: bool) -> ScalarType {
+    debug_assert!(!x.is_empty(), "x must be non-empty");
+
     #[cfg(all(
         target_arch = "aarch64",
         feature = "neon",
