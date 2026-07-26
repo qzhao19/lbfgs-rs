@@ -125,6 +125,8 @@ unsafe fn vec_scale_inplace_double_impl(x: &mut [f64], scalar: f64) {
 
 /// Compute x[i] = scalar * x[i] in place.
 pub fn vec_scale_inplace(x: &mut [ScalarType], scalar: ScalarType) {
+    debug_assert!(!x.is_empty(), "x must be non-empty");
+
     #[cfg(all(
         target_arch = "aarch64",
         feature = "neon",
