@@ -43,14 +43,14 @@ impl LineSearchParam {
     pub fn default() -> Self {
         Self {
             dec_factor: 0.5,
-            inc_factor: 2.0,
+            inc_factor: 2.1,
             ftol: 1e-4,
             wolfe: 0.9,
-            max_stepsize: 1e8,
+            max_stepsize: 1e+20,
             min_stepsize: 1e-20,
-            max_linesearch_iters: 20,
-            max_searches: 40,
-            condition: LineSearchCondition::StrongWolfe,
+            max_linesearch_iters: 10,
+            max_searches: 20,
+            condition: LineSearchCondition::Wolfe,
         }
     }
 }
