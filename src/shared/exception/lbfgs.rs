@@ -22,29 +22,29 @@ pub enum LbfgsError {
     InvalidN,
     /// Invalid parameter mem_size specified.
     InvalidMemSize,
-    /// Invalid parameter g_epsilon specified.
-    InvalidGEpsilon,
+    /// Invalid parameter epsilon specified.
+    InvalidEpsilon,
     /// Invalid parameter past specified.
-    InvalidTestPeriod,
+    InvalidPast,
     /// Invalid parameter delta specified.
     InvalidDelta,
-    /// Invalid parameter min_step specified.
-    InvalidMinStep,
-    /// Invalid parameter max_step specified.
-    InvalidMaxStep,
-    /// Invalid parameter f_dec_coeff specified.
-    InvalidFDecCoeff,
-    /// Invalid parameter s_curv_coeff specified.
-    InvalidSCurvCoeff,
+    /// Invalid parameter min_stepsize specified.
+    InvalidMinStepsize,
+    /// Invalid parameter max_stepsize specified.
+    InvalidMaxStepsize,
+    /// Invalid parameter dec_factor specified.
+    InvalidDecFactor,
+    /// Invalid parameter wolfe specified.
+    InvalidWolfe,
     /// Invalid parameter machine_prec specified.
     InvalidMachinePrec,
-    /// Invalid parameter max_linesearch specified.
-    InvalidMaxLineSearch,
+    /// Invalid parameter max_linesearch_iters specified.
+    InvalidMaxLineSearchIters,
     /// The function value became NaN or Inf.
     InvalidFuncVal,
-    /// The line-search step became smaller than min_step.
+    /// The line-search step became smaller than min_stepsize.
     MinimumStep,
-    /// The line-search step became larger than max_step.
+    /// The line-search step became larger than max_stepsize.
     MaximumStep,
     /// Line search reaches the maximum, assumptions not satisfied or precision not achievable.
     MaximumLineSearchIteration,
