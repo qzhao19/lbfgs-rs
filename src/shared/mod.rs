@@ -1,5 +1,4 @@
-pub mod constants;
-pub mod enums;
-pub mod exceptions;
-pub mod parameters;
-pub mod types;
+pub mod arch;
+pub mod exception;
+pub mod numeric;
+pub mod parameter;
