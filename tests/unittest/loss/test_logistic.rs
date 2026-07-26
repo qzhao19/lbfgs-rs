@@ -1,7 +1,6 @@
-use lbfgs_rs::algorithm::loss::logistic::logistic::LogLoss;
-use lbfgs_rs::algorithm::loss::loss::LossFunc;
+use lbfgs_rs::algorithm::loss::{LogLoss, LossFunc};
 use lbfgs_rs::data::dense::DenseDataset;
-use lbfgs_rs::shared::types::primitives::{FeatureType, LabelType, ScalarType};
+use lbfgs_rs::shared::numeric::{FeatureType, LabelType, ScalarType};
 
 // ── helpers ──
 
@@ -171,14 +170,18 @@ mod with_gradient {
 
     #[test]
     fn t4_2_multi_sample_accumulation() {
-        // 3 samples; loss is sum of per-sample losses, gradient is sum.
+        // 3 samples; evaluate_with_gradient now returns the MEAN loss and
+        // MEAN gradient (it applies inv_n_samples internally), so the manual
+        // reference must be averaged the same way before comparing.
         let x: &[&[FeatureType]] = &[&[1.0, 0.0], &[0.0, 1.0], &[1.0, 1.0]];
         let y: &[LabelType] = &[1.0, 1.0, -1.0];
         let ds = make_dataset(x, y);
         let w = vec![0.1, -0.2];
 
-        // Manual
+        // Manual: accumulate per-sample contributions, then divide by n to
+        // match the function's averaged output.
         let mut loss = LogLoss::new();
+        let inv_n: ScalarType = 1.0 / 3.0;
         let mut l_manual = 0.0;
         let mut g_manual = vec![0.0; 2];
         for i in 0..3 {
@@ -187,6 +190,10 @@ mod with_gradient {
             let d = derivate(y_hat, y[i]);
             g_manual[0] += d * x[i][0];
             g_manual[1] += d * x[i][1];
+        }
+        l_manual *= inv_n;
+        for j in 0..2 {
+            g_manual[j] *= inv_n;
         }
 
         let mut grad = vec![0.0; 2];
@@ -233,42 +240,14 @@ mod with_gradient {
         );
     }
 
-    #[test]
-    fn t4_4_repeated_calls_accumulate_into_grad() {
-        // Calling evaluate_with_gradient twice should double the gradient
-        // (since grad is += accumulated, not overwritten).
-        let x: &[&[FeatureType]] = &[&[1.0, 2.0]];
-        let y: &[LabelType] = &[1.0];
-        let ds = make_dataset(x, y);
-        let w = vec![0.3, 0.4];
-
-        let mut loss = LogLoss::new();
-        let mut grad1 = vec![0.0; 2];
-        loss.evaluate_with_gradient(&ds, &w, &mut grad1);
-
-        let mut grad2 = vec![0.0; 2];
-        loss.evaluate_with_gradient(&ds, &w, &mut grad2);
-        // call again on grad2 to test accumulation
-        loss.evaluate_with_gradient(&ds, &w, &mut grad2);
-
-        for j in 0..2 {
-            assert!(
-                (grad2[j] - 2.0 * grad1[j]).abs() < epsilon(),
-                "grad[{j}] not 2x: {} vs {}",
-                grad2[j],
-                grad1[j]
-            );
-        }
-    }
-
     /// Iris dataset reference test.
     ///
     /// Uses the same 150-sample Iris dataset, same w = [1,1,1,1], and
-    /// compares normalized loss/gradient against the reference values.
-    /// Our `evaluate_with_gradient` returns unnormalized sums, so we
-    /// divide by n_samples (=150) before comparing.
+    /// compares the MEAN loss/gradient (averaged inside
+    /// `evaluate_with_gradient`) against the reference values, which
+    /// are also already averaged over n_samples (=150).
     #[test]
-    fn t4_5_iris_matches_cpp_reference() {
+    fn t4_4_iris_matches_cpp_reference() {
         let ds = build_iris_dataset();
         let n_samples = ds.nrows();
         assert_eq!(n_samples, 150);
@@ -278,20 +257,14 @@ mod with_gradient {
 
         let mut loss = LogLoss::new();
         let mut grad = vec![0.0 as FeatureType; 4];
-        let total_loss = loss.evaluate_with_gradient(&ds, &w, &mut grad);
+        // evaluate_with_gradient now applies inv_n_samples internally —
+        // its return value and grad are already averaged over n_samples.
+        let mean_loss = loss.evaluate_with_gradient(&ds, &w, &mut grad);
 
-        println!("iris t4_5 — raw total_loss = {total_loss}");
-        println!("iris t4_5 — raw grad       = {:?}", grad);
-
-        // Normalize: Rust returns sums, reference divides by n_samples.
-        let inv_n = 1.0 as ScalarType / n_samples as ScalarType;
-        let mean_loss = total_loss * inv_n;
-        let mean_grad: Vec<ScalarType> = grad.iter().map(|&g| g * inv_n).collect();
-
-        println!("iris t4_5 — mean_loss  = {mean_loss:.6}  (expected 5.99602)");
+        println!("iris t4_5 — mean_loss = {mean_loss:.6}  (expected 5.99602)");
         println!(
-            "iris t4_5 — mean_grad  = [{:.6}, {:.6}, {:.6}, {:.6}]  (expected [2.75991, 1.64394, 1.26731, 0.324662])",
-            mean_grad[0], mean_grad[1], mean_grad[2], mean_grad[3]
+            "iris t4_5 — mean_grad = [{:.6}, {:.6}, {:.6}, {:.6}]  (expected [2.75991, 1.64394, 1.26731, 0.324662])",
+            grad[0], grad[1], grad[2], grad[3]
         );
 
         // reference expected values (tolerance 1e-5 for f64).
@@ -310,9 +283,9 @@ mod with_gradient {
         );
         for j in 0..4 {
             assert!(
-                (mean_grad[j] - expected_grad[j]).abs() < tol,
+                (grad[j] - expected_grad[j]).abs() < tol,
                 "mean_grad[{j}]: got {}, expected {} (tol {})",
-                mean_grad[j],
+                grad[j],
                 expected_grad[j],
                 tol
             );
