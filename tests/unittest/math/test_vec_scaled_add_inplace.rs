@@ -1,5 +1,5 @@
-use lbfgs_rs::infra::math::kernel::vec_scaled_add_inplace;
-use lbfgs_rs::shared::types::primitives::ScalarType;
+use lbfgs_rs::infra::math::ops_neon::vec_scaled_add_inplace;
+use lbfgs_rs::shared::numeric::ScalarType;
 
 // ── Helper utilities ──
 
