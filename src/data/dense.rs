@@ -1,7 +1,7 @@
 use super::dataset::Dataset;
 use crate::shared::numeric::{FeatureType, LabelType};
 
-pub struct DenseDataset {
+pub(crate) struct DenseDataset {
     /// Row-major matrix：X[r, c] = x_data[r * ncols + c]
     x_data: Vec<FeatureType>,
     y_data: Vec<LabelType>,
