@@ -1,6 +1,6 @@
 use crate::shared::numeric::{FeatureType, LabelType};
 
-pub trait Dataset {
+pub(crate) trait Dataset {
     fn nrows(&self) -> usize;
     fn ncols(&self) -> usize;
 
