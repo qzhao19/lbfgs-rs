@@ -1,6 +1,6 @@
-use lbfgs_rs::data::dataset::Dataset;
-use lbfgs_rs::data::dense::DenseDataset;
-use lbfgs_rs::shared::numeric::{FeatureType, LabelType};
+use crate::data::dataset::Dataset;
+use crate::data::dense::DenseDataset;
+use crate::shared::numeric::{FeatureType, LabelType};
 
 /// Build a 3×2 row-major dataset: [[1,2], [3,4], [5,6]]
 fn rectangular_3x2(cache: bool) -> DenseDataset {
