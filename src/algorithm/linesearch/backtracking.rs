@@ -1,12 +1,14 @@
-use super::super::linesearch::LineSearch;
-use crate::algorithm::loss::LossFunc;
+#![allow(dead_code)]
+
+use super::linesearch::LineSearch;
+use crate::algorithm::loss::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::ops_neon::{vec_dot, vec_scaled_add};
+use crate::infra::math::vec_ops::{vec_dot, vec_scaled_add};
 use crate::shared::exception::LbfgsError;
 use crate::shared::numeric::{FeatureType, ScalarType};
 use crate::shared::parameter::{LineSearchCondition, LineSearchParam};
 
-pub struct BacktrackingLineSearch {
+pub(crate) struct BacktrackingLineSearch {
     /// Dataset reference owned by linesearch
     pub dataset: Box<dyn Dataset>,
 
