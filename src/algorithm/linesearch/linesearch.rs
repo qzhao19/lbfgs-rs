@@ -1,7 +1,7 @@
 use crate::shared::exception::LbfgsError;
 use crate::shared::numeric::{FeatureType, ScalarType};
 
-pub trait LineSearch {
+pub(crate) trait LineSearch {
     /// Returns the number of function evaluations on success.
     fn search(
         &mut self,
