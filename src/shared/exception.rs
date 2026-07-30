@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// Success termination status of the L-BFGS outer loop.
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
