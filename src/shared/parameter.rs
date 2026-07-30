@@ -135,3 +135,129 @@ impl LbfgsParams {
         }
     }
 }
+
+/// Parse a condition string into [`LineSearchCondition`]. Case-insensitive.
+fn parse_condition(s: &str) -> Result<LineSearchCondition, String> {
+    match s.to_ascii_lowercase().as_str() {
+        "armijo" => Ok(LineSearchCondition::Armijo),
+        "wolfe" => Ok(LineSearchCondition::Wolfe),
+        "strongwolfe" | "strong-wolfe" => Ok(LineSearchCondition::StrongWolfe),
+        _ => Err(format!("unknown condition: {}", s)),
+    }
+}
+
+/// User-facing optimisation arguments.
+///
+/// Mirrors the fields of [`LbfgsParams`], which are passed
+/// as top-level arguments to [`crate::LBFGS::new`].
+///
+/// Every field is optional; fields left as `None` take the value from
+/// [`LbfgsParams::default`]. Construct via struct-update syntax:
+///
+/// ```ignore
+/// let args = OptimizeArgs {
+///     max_iters: Some(20),
+///     condition: Some("wolfe".to_string()),
+///     ..Default::default()
+/// };
+/// ```
+#[derive(Clone, Debug, Default)]
+pub struct OptimizeArgs {
+    // ── Outer-loop convergence criteria ──
+    /// Function-value convergence threshold: |f' - f| / max(1, |f|) < delta.
+    pub delta: Option<ScalarType>,
+    /// Gradient convergence threshold: ||g(x)|| / max(1, ||x||) < epsilon.
+    pub epsilon: Option<ScalarType>,
+
+    // ── Outer-loop control ──
+    /// Maximum number of L-BFGS outer iterations.
+    pub max_iters: Option<usize>,
+    /// Number of correction pairs retained for the inverse-Hessian
+    /// approximation (the "m" in L-BFGS).
+    pub mem_size: Option<usize>,
+    /// Number of past iterations used by the delta-based convergence test.
+    pub past: Option<usize>,
+
+    // ── Line-search sub-parameters (flattened) ──
+    /// Step reduction factor.
+    pub dec_factor: Option<ScalarType>,
+    /// Step increase factor.
+    pub inc_factor: Option<ScalarType>,
+    /// Tolerance for the line-search acceptance condition.
+    pub ftol: Option<ScalarType>,
+    /// Wolfe curvature coefficient (used when `condition` is `Wolfe`).
+    pub wolfe: Option<ScalarType>,
+    /// Maximum allowed step size.
+    pub max_stepsize: Option<ScalarType>,
+    /// Minimum allowed step size.
+    pub min_stepsize: Option<ScalarType>,
+    /// Maximum line-search iterations.
+    pub max_linesearch_iters: Option<usize>,
+    /// Maximum line-search trials per iteration.
+    pub max_searches: Option<usize>,
+    /// Acceptance condition string: `"armijo"` | `"wolfe"` | `"strongwolfe"`
+    /// (case-insensitive).
+    pub condition: Option<String>,
+}
+
+impl OptimizeArgs {
+    /// Merge into a fully-populated [`LbfgsParams`], starting from
+    /// [`LbfgsParams::default`] and overriding any fields the caller set.
+    pub(crate) fn to_lbfgs_params(
+        self,
+        loss: LossType,
+        linesearch_policy: LineSearchPolicy,
+        verbose: bool,
+    ) -> Result<LbfgsParams, String> {
+        let mut params = LbfgsParams::default();
+        params.loss = loss;
+        params.linesearch_policy = linesearch_policy;
+        params.verbose = verbose;
+
+        if let Some(v) = self.delta {
+            params.delta = v;
+        }
+        if let Some(v) = self.epsilon {
+            params.epsilon = v;
+        }
+        if let Some(v) = self.max_iters {
+            params.max_iters = v;
+        }
+        if let Some(v) = self.mem_size {
+            params.mem_size = v;
+        }
+        if let Some(v) = self.past {
+            params.past = v;
+        }
+
+        if let Some(v) = self.dec_factor {
+            params.linesearch_params.dec_factor = v;
+        }
+        if let Some(v) = self.inc_factor {
+            params.linesearch_params.inc_factor = v;
+        }
+        if let Some(v) = self.ftol {
+            params.linesearch_params.ftol = v;
+        }
+        if let Some(v) = self.wolfe {
+            params.linesearch_params.wolfe = v;
+        }
+        if let Some(v) = self.max_stepsize {
+            params.linesearch_params.max_stepsize = v;
+        }
+        if let Some(v) = self.min_stepsize {
+            params.linesearch_params.min_stepsize = v;
+        }
+        if let Some(v) = self.max_linesearch_iters {
+            params.linesearch_params.max_linesearch_iters = v;
+        }
+        if let Some(v) = self.max_searches {
+            params.linesearch_params.max_searches = v;
+        }
+        if let Some(s) = self.condition {
+            params.linesearch_params.condition = parse_condition(&s)?;
+        }
+
+        Ok(params)
+    }
+}
