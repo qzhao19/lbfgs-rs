@@ -202,46 +202,6 @@ pub(crate) unsafe fn vec_norm2_double_impl(x: &[f64], squared: bool) -> f64 {
     not(target_os = "macos")
 ))]
 #[inline]
-pub(crate) unsafe fn vec_scale_double_impl(x: &[f64], scalar: f64, out: &mut [f64]) {
-    let len: usize = x.len();
-    let scalar_v = vdupq_n_f64(scalar);
-
-    let x_ptr = x.as_ptr();
-    let out_ptr = out.as_mut_ptr();
-
-    let step = DTYPE_LANES * DTYPE_UNROLL;
-    let chunks = len / step;
-
-    let mut i: usize = 0usize;
-    for _ in 0..chunks {
-        let x0 = vld1q_f64(x_ptr.add(i));
-        vst1q_f64(out_ptr.add(i), vmulq_f64(x0, scalar_v));
-        i += DTYPE_LANES;
-
-        let x1 = vld1q_f64(x_ptr.add(i));
-        vst1q_f64(out_ptr.add(i), vmulq_f64(x1, scalar_v));
-        i += DTYPE_LANES;
-    }
-
-    while i + DTYPE_LANES <= len {
-        let xv = vld1q_f64(x_ptr.add(i));
-        vst1q_f64(out_ptr.add(i), vmulq_f64(xv, scalar_v));
-        i += DTYPE_LANES;
-    }
-
-    while i < len {
-        *out_ptr.add(i) = *x_ptr.add(i) * scalar;
-        i += 1;
-    }
-}
-
-#[cfg(all(
-    target_arch = "aarch64",
-    feature = "neon",
-    feature = "f64",
-    not(target_os = "macos")
-))]
-#[inline]
 pub(crate) unsafe fn vec_scale_inplace_double_impl(x: &mut [f64], scalar: f64) {
     let len = x.len();
 
