@@ -1,2 +1,2 @@
 pub mod kernel;
-pub use kernel::ops_neon;
+pub use kernel::vec_ops;
