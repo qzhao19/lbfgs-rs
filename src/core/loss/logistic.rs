@@ -1,9 +1,9 @@
-use super::super::loss::LossFunc;
+use super::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::ops_neon::{vec_dot, vec_scale_inplace, vec_scaled_add_inplace};
+use crate::infra::math::vec_ops::{vec_dot, vec_scale_inplace, vec_scaled_add_inplace};
 use crate::shared::numeric::{FeatureType, LabelType, ScalarType};
 
-pub struct LogLoss;
+pub(crate) struct LogLoss;
 
 impl LogLoss {
     pub fn new() -> Self {
