@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::shared::numeric::{FeatureType, LabelType};
 
 pub(crate) trait Dataset {
