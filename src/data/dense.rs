@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::dataset::Dataset;
 use crate::shared::numeric::{FeatureType, LabelType};
 
