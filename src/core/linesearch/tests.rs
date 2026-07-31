@@ -1,7 +1,7 @@
-use crate::algorithm::linesearch::backtracking::BacktrackingLineSearch;
-use crate::algorithm::linesearch::bracketing::BracketingLineSearch;
-use crate::algorithm::linesearch::linesearch::LineSearch;
-use crate::algorithm::loss::loss::LossFunc;
+use crate::core::linesearch::backtracking::BacktrackingLineSearch;
+use crate::core::linesearch::bracketing::BracketingLineSearch;
+use crate::core::linesearch::linesearch::LineSearch;
+use crate::core::loss::loss::LossFunc;
 use crate::data::dataset::Dataset;
 use crate::data::dense::DenseDataset;
 use crate::shared::exception::LbfgsError;
@@ -835,7 +835,7 @@ linesearch_suite!(bracketing, Algo::Bracketing);
 #[cfg(feature = "f64")]
 mod cpp_reference {
     use super::*;
-    use crate::algorithm::loss::logistic::LogLoss;
+    use crate::core::loss::logistic::LogLoss;
 
     #[test]
     fn iris_logloss_wolfe_matches_cpp() {
