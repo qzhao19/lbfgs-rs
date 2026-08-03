@@ -1,13 +1,12 @@
-use super::optimizer::{LimitedMemoryBuf, Optimizer};
+use super::hessian_approx_mat::LimitedMemHessianApproxMat;
+use super::optimizer::Optimizer;
 use crate::algorithm::linesearch::backtracking::BacktrackingLineSearch;
 use crate::algorithm::linesearch::bracketing::BracketingLineSearch;
 use crate::algorithm::linesearch::linesearch::LineSearch;
 use crate::algorithm::loss::logistic::LogLoss;
 use crate::algorithm::loss::loss::LossFunc;
 use crate::data::dataset::Dataset;
-use crate::infra::math::vec_ops::{
-    vec_diff, vec_dot, vec_ncpy, vec_norm2, vec_scale_inplace, vec_scaled_add_inplace,
-};
+use crate::infra::math::vec_ops::{vec_diff, vec_ncpy, vec_norm2};
 use crate::shared::exception::{LbfgsError, LbfgsStatus};
 use crate::shared::numeric::ScalarType;
 use crate::shared::parameter::{LbfgsParams, LineSearchPolicy, LossType};
@@ -51,11 +50,8 @@ impl Optimizer for LBFGS {
         // Copy weight vector x from initialize x0
         let mut x: Vec<ScalarType> = self.x0.clone();
 
-        // Initialize limited-memory correction history
-        let mut lm_buf: Vec<LimitedMemoryBuf> =
-            std::iter::repeat_with(|| LimitedMemoryBuf::initialize(n_features))
-                .take(mem_size)
-                .collect();
+        // Limited-memory inverse-Hessian approximation
+        let mut hessian = LimitedMemHessianApproxMat::new(mem_size, n_features);
 
         // Define intermediate variables: previous x, gradient, previous gradient, directions
         let mut xp: Vec<ScalarType> = vec![0.0; n_features];
@@ -102,7 +98,6 @@ impl Optimizer for LBFGS {
         }
 
         let mut k: usize = 1;
-        let mut end: usize = 0;
         let record_history = self.callback.is_some();
         let result: Result<LbfgsStatus, LbfgsError> = loop {
             // Store current xp = x and gp = g
@@ -151,62 +146,22 @@ impl Optimizer for LBFGS {
                 break Err(LbfgsError::MaximumIteration);
             }
 
-            // Update vector s and y, store at slot `end`
+            // Update correction history: s = x - xp, y = g - gp
             // s_{k+1} = x_{k+1} - x_{k} = step * d_{k}.
             // y_{k+1} = g_{k+1} - g_{k}.
-            vec_diff(&x, &xp, &mut lm_buf[end].mem_s);
-            vec_diff(&g, &gp, &mut lm_buf[end].mem_y);
+            let mut s: Vec<ScalarType> = vec![0.0; n_features];
+            let mut y: Vec<ScalarType> = vec![0.0; n_features];
+            vec_diff(&x, &xp, &mut s);
+            vec_diff(&g, &gp, &mut y);
+            hessian.update(&s, &y);
 
-            // Compute scalars ys and yy:
-            // ys = y^t @ s, s = 1 / rho.
-            // yy = y^t @ y.
-            let ys: ScalarType = vec_dot(&lm_buf[end].mem_y, &lm_buf[end].mem_s);
-            let yy: ScalarType = vec_dot(&lm_buf[end].mem_y, &lm_buf[end].mem_y);
-            lm_buf[end].mem_ys = ys;
-
-            // d = -g
+            // Search direction: d = -g,
             vec_ncpy(&g, &mut d);
 
-            // bound: number of currently available historical messages
-            // k: number of iterations
-            // end: indicates the location of the latest history information.
-            //      after each iteration, end is updated to the next position
-            // j: index for traversing history information
-            let bound: usize = if mem_size <= k { mem_size } else { k };
+            // Compute d <- H * d, two-loop recursion
+            hessian.apply_hv(&mut d);
+
             k += 1;
-            end = (end + 1) % mem_size;
-            let mut j = end;
-
-            // two-loop recursion — forward pass
-            for _ in 0..bound {
-                // if (--j == -1) j = m-1 traverse history forward,
-                // starting with the most recent history message
-                j = (j + mem_size - 1) % mem_size;
-
-                // alpha_{j} = s^{T}_{j} @ d_{j} * rho_{j}, rho_{j} = 1/mem_ys
-                let alpha: ScalarType = vec_dot(&lm_buf[j].mem_s, &d) / lm_buf[j].mem_ys;
-                lm_buf[j].mem_alpha = alpha;
-
-                // d_{i} = d_{i+1} - (alpha_{i} * y_{i})
-                vec_scaled_add_inplace(&lm_buf[j].mem_y, -alpha, &mut d);
-            }
-
-            let scale: ScalarType = ys / yy;
-            vec_scale_inplace(&mut d, scale);
-
-            // two-loop recursion — backward pass
-            for _ in 0..bound {
-                // beta_j = rho_{j} * y_{T}_{j} @ d_{J}, rho_{j} = 1/mem_ys
-                let beta: ScalarType = vec_dot(&lm_buf[j].mem_y, &d) / lm_buf[j].mem_ys;
-
-                // gamma_{i+1} = gamma_{i} + (alpha_{j} - beta_{j}) * s_{j}
-                let coef: ScalarType = lm_buf[j].mem_alpha - beta;
-                vec_scaled_add_inplace(&lm_buf[j].mem_s, coef, &mut d);
-
-                // Starting the earliest history information to traverse backward
-                j = (j + 1) % mem_size;
-            }
-
             stepsize = 1.0;
         };
 
