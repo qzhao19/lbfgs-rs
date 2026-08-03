@@ -1,3 +1,4 @@
+use super::exception::LbfgsError;
 use super::numeric::ScalarType;
 
 /// Acceptance condition for the line search.
@@ -201,6 +202,69 @@ pub struct OptimizeArgs {
 }
 
 impl OptimizeArgs {
+    /// Validate every set field against its admissible range.
+    pub(crate) fn validate(&self) -> Result<(), LbfgsError> {
+        // ── Outer-loop convergence criteria ──
+        if let Some(v) = self.epsilon {
+            if v < 0.0 {
+                return Err(LbfgsError::InvalidEpsilon);
+            }
+        }
+        if let Some(v) = self.delta {
+            if v < 0.0 {
+                return Err(LbfgsError::InvalidDelta);
+            }
+        }
+
+        // ── Outer-loop control ──
+        if let Some(v) = self.mem_size {
+            if v == 0 {
+                return Err(LbfgsError::InvalidMemSize);
+            }
+        }
+
+        // ── Line-search sub-parameters ──
+        if let Some(v) = self.dec_factor {
+            if v <= 0.0 || v >= 1.0 {
+                return Err(LbfgsError::InvalidDecFactor);
+            }
+        }
+        if let Some(v) = self.inc_factor {
+            if v <= 1.0 {
+                // No InvalidIncFactor variant; use InvalidParameters as fallback.
+                return Err(LbfgsError::InvalidParameters);
+            }
+        }
+        if let Some(v) = self.wolfe {
+            if v <= 0.0 || v >= 1.0 {
+                return Err(LbfgsError::InvalidWolfe);
+            }
+        }
+        if let Some(v) = self.max_stepsize {
+            if v <= 0.0 {
+                return Err(LbfgsError::InvalidMaxStepsize);
+            }
+        }
+        if let Some(v) = self.min_stepsize {
+            if v <= 0.0 {
+                return Err(LbfgsError::InvalidMinStepsize);
+            }
+        }
+        if let Some(v) = self.max_linesearch_iters {
+            if v == 0 {
+                return Err(LbfgsError::InvalidMaxLineSearchIters);
+            }
+        }
+        if let Some(v) = self.max_searches {
+            if v == 0 {
+                // No InvalidMaxSearches variant; use InvalidParameters as fallback.
+                return Err(LbfgsError::InvalidParameters);
+            }
+        }
+
+        Ok(())
+    }
+
     /// Merge into a fully-populated [`LbfgsParams`], starting from
     /// [`LbfgsParams::default`] and overriding any fields the caller set.
     pub(crate) fn to_lbfgs_params(
