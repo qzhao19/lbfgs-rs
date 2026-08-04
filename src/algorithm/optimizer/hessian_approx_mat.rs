@@ -30,7 +30,7 @@ pub(crate) struct LimitedMemHessianApproxMat {
     capacity: usize,
     /// `dim`: Dimension of every stored vector `s` and `y`, equal to `n_features`
     dim: usize,
-    /// - `end`: rite cursor, index of the slot where the *next* `update` will store
+    /// - `end`: write cursor, index of the slot where the *next* `update` will store
     end: usize,
     /// - `bound`: number of currently available correction pairs
     bound: usize,
