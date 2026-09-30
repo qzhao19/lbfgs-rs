@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::linesearch::LineSearch;
 use crate::algorithm::loss::loss::LossFunc;
 use crate::data::dataset::Dataset;
@@ -20,18 +18,14 @@ pub(crate) struct BracketingLineSearch {
 }
 
 impl BracketingLineSearch {
-    pub fn new<DatasetType, LossFuncType>(
-        dataset: DatasetType,
-        loss_fn: LossFuncType,
+    pub fn new(
+        dataset: Box<dyn Dataset>,
+        loss_fn: Box<dyn LossFunc>,
         linesearch_params: LineSearchParam,
-    ) -> Self
-    where
-        DatasetType: Dataset + 'static,
-        LossFuncType: LossFunc + 'static,
-    {
+    ) -> Self {
         Self {
-            dataset: Box::new(dataset),
-            loss_fn: Box::new(loss_fn),
+            dataset,
+            loss_fn,
             linesearch_params,
         }
     }
