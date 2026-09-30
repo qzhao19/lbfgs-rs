@@ -67,16 +67,16 @@ impl Optimizer for LBFGS {
 
         // Build line search
         let mut ls: Box<dyn LineSearch> = match linesearch_policy {
-            LineSearchPolicy::Backtracking => Box::new(BacktrackingLineSearch {
+            LineSearchPolicy::Backtracking => Box::new(BacktrackingLineSearch::new(
                 dataset,
                 loss_fn,
                 linesearch_params,
-            }),
-            LineSearchPolicy::Bracketing => Box::new(BracketingLineSearch {
+            )),
+            LineSearchPolicy::Bracketing => Box::new(BracketingLineSearch::new(
                 dataset,
                 loss_fn,
                 linesearch_params,
-            }),
+            )),
         };
 
         // Define a vector for storing past function value
