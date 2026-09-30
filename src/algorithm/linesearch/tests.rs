@@ -183,13 +183,13 @@ impl Algo {
     ) -> Box<dyn LineSearch> {
         match self {
             Algo::Backtracking => Box::new(BacktrackingLineSearch::new(
-                dummy_dataset(n_features, n_samples),
-                QuadraticLoss::new(),
+                Box::new(dummy_dataset(n_features, n_samples)),
+                Box::new(QuadraticLoss::new()),
                 params,
             )),
             Algo::Bracketing => Box::new(BracketingLineSearch::new(
-                dummy_dataset(n_features, n_samples),
-                QuadraticLoss::new(),
+                Box::new(dummy_dataset(n_features, n_samples)),
+                Box::new(QuadraticLoss::new()),
                 params,
             )),
         }
@@ -854,7 +854,7 @@ mod cpp_reference {
             condition: LineSearchCondition::Wolfe,
         };
 
-        let mut ls = BacktrackingLineSearch::new(dataset, loss_fn, params);
+        let mut ls = BacktrackingLineSearch::new(Box::new(dataset), Box::new(loss_fn), params);
 
         let tol: ScalarType = 1e-5;
 
