@@ -22,17 +22,17 @@ impl LimitedMemCorrHistory {
     }
 }
 
-/// Limited-memory inverse-Hessian approximation for L-BFGS.
+/// Limited-memory inverse-Hessian approximation for L-BFGS
+/// - `history`: ring buffer of correction-pair slots
+/// - `capacity`: ring-buffer capacity ("m" in L-BFGS)
+/// - `dim`: Dimension of every stored vector `s` and `y`, equal to `n_features`
+/// - `end`: write cursor, index of the slot where the *next* `update` will store
+/// - `bound`: number of currently available correction pairs
 pub(crate) struct LimitedMemHessianApproxMat {
-    /// - `history`: ring buffer of correction-pair slots.
     history: Vec<LimitedMemCorrHistory>,
-    /// `capacity`: ring-buffer capacity (the "m" in L-BFGS).
     capacity: usize,
-    /// `dim`: Dimension of every stored vector `s` and `y`, equal to `n_features`
     dim: usize,
-    /// - `end`: write cursor, index of the slot where the *next* `update` will store
     end: usize,
-    /// - `bound`: number of currently available correction pairs
     bound: usize,
 }
 
