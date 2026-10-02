@@ -1,7 +1,7 @@
 #[cfg(all(
     target_arch = "aarch64",
     feature = "neon",
-    feature = "f64",
+    feature = "f32",
     not(target_os = "macos")
 ))]
 use std::arch::aarch64::*;
