@@ -137,6 +137,99 @@ impl LbfgsParams {
     }
 }
 
+// ── Bound constraint (L-BFGS-B) ───
+/// Per-variable box constraint for L-BFGS-B.
+///
+/// | Constructor          | Meaning              |
+/// |----------------------|----------------------|
+/// | `Bound::none()`      | `−∞ < x < +∞`        |
+/// | `Bound::lower(lb)`   | `lb ≤ x`             |
+/// | `Bound::upper(ub)`   | `x ≤ ub`             |
+/// | `Bound::both(lb,ub)` | `lb ≤ x ≤ ub`        |
+#[derive(Clone, Debug)]
+pub(crate) struct Bound {
+    pub lower: Option<ScalarType>,
+    pub upper: Option<ScalarType>,
+}
+
+impl Bound {
+    /// Unconstrained on both sides.
+    #[inline]
+    pub fn none() -> Self {
+        Self {
+            lower: None,
+            upper: None,
+        }
+    }
+
+    /// Only a lower bound: `lb ≤ x`.
+    #[inline]
+    pub fn lower(lb: ScalarType) -> Self {
+        Self {
+            lower: Some(lb),
+            upper: None,
+        }
+    }
+
+    /// Only an upper bound: `x ≤ ub`.
+    #[inline]
+    pub fn upper(ub: ScalarType) -> Self {
+        Self {
+            lower: None,
+            upper: Some(ub),
+        }
+    }
+
+    /// Both bounds: `lb ≤ x ≤ ub`.
+    /// Panics when `lb > ub`.
+    #[inline]
+    pub fn both(lb: ScalarType, ub: ScalarType) -> Self {
+        debug_assert!(lb <= ub, "Bound::both: lower ({}) > upper ({})", lb, ub);
+        Self {
+            lower: Some(lb),
+            upper: Some(ub),
+        }
+    }
+
+    /// Project `x` onto `[lower, upper]`, clamping each active side.
+    /// This is the inner operation used by L-BFGS-B at every iteration.
+    #[inline]
+    pub(crate) fn project(&self, x: ScalarType) -> ScalarType {
+        let x = match self.lower {
+            Some(lb) => {
+                if x < lb {
+                    lb
+                } else {
+                    x
+                }
+            }
+            None => x,
+        };
+        match self.upper {
+            Some(ub) => {
+                if x > ub {
+                    ub
+                } else {
+                    x
+                }
+            }
+            None => x,
+        }
+    }
+
+    /// Returns `true` when `x` is inside (or on the boundary of) the constraint.
+    #[inline]
+    pub(crate) fn is_feasible(&self, x: ScalarType) -> bool {
+        self.lower.map_or(true, |lb| x >= lb) && self.upper.map_or(true, |ub| x <= ub)
+    }
+
+    /// Returns `true` when this bound imposes no constraint on either side.
+    #[inline]
+    pub(crate) fn is_free(&self) -> bool {
+        self.lower.is_none() && self.upper.is_none()
+    }
+}
+
 /// Parse a condition string into [`LineSearchCondition`]. Case-insensitive.
 fn parse_condition(s: &str) -> Result<LineSearchCondition, String> {
     match s.to_ascii_lowercase().as_str() {
