@@ -273,8 +273,9 @@ mod cases {
         assert_eq!(fix.run(ls), Err(LbfgsError::IncreaseGradient));
     }
 
-    /// dg_init == 0: passes gate, Armijo fails until step is tiny.
-    /// Both algos shrink (×0.5 vs bisect) so qualitative props hold.
+    /// dg_init == 0: passes the gate, then Armijo is unsatisfiable in exact
+    /// arithmetic (fx = 50 + t²/2 > 50 = fx_init), so both algos shrink
+    /// (×0.5 vs bisect) until fp rounding flattens the model.
     pub fn c05_dg_init_zero_enters_loop(ls: &mut dyn LineSearch) {
         let mut fix = SearchFixture::new(vec![10.0, 0.0], vec![0.0, 1.0], 1.0, 1);
         let result = fix.run(ls);
@@ -284,9 +285,16 @@ mod cases {
             "expected Ok due to fp rounding, got {:?}",
             result
         );
+        // Where rounding rescues the loop is precision-dependent: with
+        // |fx| ≈ 50 the trial value rounds onto fx_init already at t = 2^-9
+        // in f32 (count = 10, stepsize ≈ 2e-3), but only near t = 2^-24 in
+        // f64 (count = 25, stepsize ≈ 6e-8). Keep bounds valid in both.
         let count = result.unwrap();
-        assert!(count > 10, "expected many shrinks, got count={}", count);
-        assert!(fix.stepsize < 1e-5);
+        assert!(count > 5, "expected repeated shrinks, got count={}", count);
+        assert!(
+            fix.stepsize < 0.1,
+            "stepsize should be shrunk well below 1.0"
+        );
         assert!(fix.fx.is_finite());
     }
 
@@ -348,6 +356,10 @@ mod cases {
         assert_eq!(fix.run(ls), Ok(1));
     }
 
+    /// ftol = 1.0 makes the Armijo threshold unreachable in exact
+    /// arithmetic (fx - (fx_init + t·ftol·dg_init) = t²/2 > 0), so the
+    /// loop shrinks until fp rounding equates the two sides — at the same
+    /// precision-dependent point as c05 (count = 10 in f32, ≈ 25 in f64).
     pub fn a06_strict_ftol(ls: &mut dyn LineSearch) {
         let mut fix = SearchFixture::new(vec![10.0, 0.0], vec![-1.0, 0.0], 1.0, 1);
         let result = fix.run(ls);
@@ -357,8 +369,11 @@ mod cases {
             result
         );
         let count = result.unwrap();
-        assert!(count > 10, "expected many shrinks, got count={}", count);
-        assert!(fix.stepsize < 1e-5);
+        assert!(count > 5, "expected repeated shrinks, got count={}", count);
+        assert!(
+            fix.stepsize < 0.1,
+            "stepsize should be shrunk well below 1.0"
+        );
         assert!(fix.fx.is_finite());
     }
 
