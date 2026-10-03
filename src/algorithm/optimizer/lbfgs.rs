@@ -1,4 +1,4 @@
-use super::hessian_approx_mat::LimitedMemHessianApproxMat;
+use super::limited_mem_bfgs_mat::LimitedMemBfgsMat;
 use super::optimizer::Optimizer;
 use crate::algorithm::linesearch::backtracking::BacktrackingLineSearch;
 use crate::algorithm::linesearch::bracketing::BracketingLineSearch;
@@ -50,8 +50,8 @@ impl Optimizer for LBFGS {
         // Copy weight vector x from initialize x0
         let mut x: Vec<ScalarType> = self.x0.clone();
 
-        // Limited-memory inverse-Hessian approximation
-        let mut hessian = LimitedMemHessianApproxMat::new(mem_size, n_features);
+        // Limited-memory BFGS matrix (two-loop H·v via apply_hv)
+        let mut hessian = LimitedMemBfgsMat::new(mem_size, n_features);
 
         // Define intermediate variables: previous x, gradient, previous gradient, directions
         let mut xp: Vec<ScalarType> = vec![0.0; n_features];
