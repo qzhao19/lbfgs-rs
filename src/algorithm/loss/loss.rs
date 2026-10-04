@@ -1,4 +1,4 @@
-use crate::data::dataset::Dataset;
+use crate::infra::data::dataset::Dataset;
 use crate::shared::numeric::ScalarType;
 
 pub(crate) trait LossFunc {

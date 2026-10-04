@@ -1,5 +1,5 @@
 use super::loss::LossFunc;
-use crate::data::dataset::Dataset;
+use crate::infra::data::dataset::Dataset;
 use crate::infra::math::vec_ops::{vec_dot, vec_scale_inplace, vec_scaled_add_inplace};
 use crate::shared::numeric::{FeatureType, LabelType, ScalarType};
 
