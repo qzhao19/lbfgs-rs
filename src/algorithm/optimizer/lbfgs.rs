@@ -1,11 +1,12 @@
-use super::limited_mem_bfgs_mat::LimitedMemBfgsMat;
 use super::optimizer::Optimizer;
+
 use crate::algorithm::linesearch::backtracking::BacktrackingLineSearch;
 use crate::algorithm::linesearch::bracketing::BracketingLineSearch;
 use crate::algorithm::linesearch::linesearch::LineSearch;
 use crate::algorithm::loss::logistic::LogLoss;
 use crate::algorithm::loss::loss::LossFunc;
-use crate::data::dataset::Dataset;
+use crate::infra::data::dataset::Dataset;
+use crate::infra::math::bfgs_mat::LimitedMemBfgsMat;
 use crate::infra::math::vec_ops::{vec_diff, vec_ncpy, vec_norm2};
 use crate::shared::exception::{LbfgsError, LbfgsStatus};
 use crate::shared::numeric::ScalarType;
