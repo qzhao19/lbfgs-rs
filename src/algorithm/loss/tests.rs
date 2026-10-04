@@ -1,5 +1,6 @@
 use super::logistic::LogLoss;
 use super::loss::LossFunc;
+
 use crate::infra::data::dense::DenseDataset;
 use crate::shared::numeric::{FeatureType, LabelType, ScalarType};
 

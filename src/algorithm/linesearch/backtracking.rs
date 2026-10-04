@@ -1,4 +1,5 @@
 use super::linesearch::LineSearch;
+
 use crate::algorithm::loss::loss::LossFunc;
 use crate::infra::data::dataset::Dataset;
 use crate::infra::math::vec_ops::{vec_dot, vec_scaled_add};
