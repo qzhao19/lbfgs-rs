@@ -1,5 +1,6 @@
-use crate::data::dataset::Dataset;
-use crate::data::dense::DenseDataset;
+use super::dataset::Dataset;
+use super::dense::DenseDataset;
+
 use crate::shared::numeric::{FeatureType, LabelType};
 
 /// Build a 3×2 row-major dataset: [[1,2], [3,4], [5,6]]
