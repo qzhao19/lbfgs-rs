@@ -1,4 +1,4 @@
-use crate::data::dataset::Dataset;
+use crate::infra::data::dataset::Dataset;
 use crate::shared::exception::{LbfgsError, LbfgsStatus};
 use crate::shared::numeric::ScalarType;
 
