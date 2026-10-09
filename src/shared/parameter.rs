@@ -138,14 +138,12 @@ impl LbfgsParams {
 }
 
 // ── Bound constraint (L-BFGS-B) ───
-/// Per-variable box constraint for L-BFGS-B.
-///
-/// | Constructor          | Meaning              |
-/// |----------------------|----------------------|
-/// | `Bound::none()`      | `−∞ < x < +∞`        |
-/// | `Bound::lower(lb)`   | `lb ≤ x`             |
-/// | `Bound::upper(ub)`   | `x ≤ ub`             |
-/// | `Bound::both(lb,ub)` | `lb ≤ x ≤ ub`        |
+ 
+/// Per-variable box constraint for L-BFGS-B
+/// - `Bound::none()`      : `−∞ < x < +∞`
+/// - `Bound::lower(lb)`   : `lb ≤ x` 
+/// - `Bound::upper(ub)`   : `x ≤ ub` 
+/// - `Bound::both(lb,ub)` : `lb ≤ x ≤ ub`
 #[derive(Clone, Debug)]
 pub(crate) struct Bound {
     pub lower: Option<ScalarType>,
@@ -230,7 +228,7 @@ impl Bound {
     }
 }
 
-/// Parse a condition string into [`LineSearchCondition`]. Case-insensitive.
+/// Parse a condition string into `LineSearchCondition`. Case-insensitive.
 fn parse_condition(s: &str) -> Result<LineSearchCondition, String> {
     match s.to_ascii_lowercase().as_str() {
         "armijo" => Ok(LineSearchCondition::Armijo),
@@ -241,12 +239,8 @@ fn parse_condition(s: &str) -> Result<LineSearchCondition, String> {
 }
 
 /// User-facing optimisation arguments.
-///
-/// Mirrors the fields of [`LbfgsParams`], which are passed
-/// as top-level arguments to [`crate::LBFGS::new`].
-///
 /// Every field is optional; fields left as `None` take the value from
-/// [`LbfgsParams::default`]. Construct via struct-update syntax:
+/// `LbfgsParams::default`. Construct via struct-update syntax:
 ///
 /// ```ignore
 /// let args = OptimizeArgs {
@@ -358,8 +352,8 @@ impl OptimizeArgs {
         Ok(())
     }
 
-    /// Merge into a fully-populated [`LbfgsParams`], starting from
-    /// [`LbfgsParams::default`] and overriding any fields the caller set.
+    /// Merge into a fully-populated `LbfgsParams`, starting from
+    /// `LbfgsParams::default` and overriding any fields the caller set.
     pub(crate) fn to_lbfgs_params(
         self,
         loss: LossType,
