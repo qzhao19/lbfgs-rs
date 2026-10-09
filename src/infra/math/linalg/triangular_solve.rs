@@ -5,7 +5,7 @@ use crate::shared::numeric::ScalarType;
 ///
 /// Returns `false` when a diagonal entry of `U` is exactly zero
 pub(crate) fn solve_upper_triangular(
-    U: &[ScalarType],
+    u: &[ScalarType],
     m: usize,
     k: usize,
     b: &mut [ScalarType],
@@ -14,7 +14,7 @@ pub(crate) fn solve_upper_triangular(
 
     // 1. Check the diagonal for zeros
     for i in 0..k {
-        if U[i * m + i] == 0.0 {
+        if u[i * m + i] == 0.0 {
             return false;
         }
     }
@@ -24,9 +24,9 @@ pub(crate) fn solve_upper_triangular(
         let mut sum = b[i];
         for j in (i + 1)..k {
             // $u_{ii}x_i = b_i - \sum_{j=i+1}^{k} u_{ij}x_j$
-            sum -= U[i * m + j] * b[j];
+            sum -= u[i * m + j] * b[j];
         }
-        b[i] = sum / U[i * m + i];
+        b[i] = sum / u[i * m + i];
     }
 
     true
@@ -38,7 +38,7 @@ pub(crate) fn solve_upper_triangular(
 ///
 /// Returns `false` when a diagonal entry of `U` is exactly zero.
 pub(crate) fn solve_upper_triangular_transpose(
-    U: &[ScalarType],
+    u: &[ScalarType],
     m: usize,
     k: usize,
     b: &mut [ScalarType],
@@ -47,7 +47,7 @@ pub(crate) fn solve_upper_triangular_transpose(
 
     // 1. Check the diagonal for zeros
     for i in 0..k {
-        if U[i * m + i] == 0.0 {
+        if u[i * m + i] == 0.0 {
             return false;
         }
     }
@@ -57,9 +57,9 @@ pub(crate) fn solve_upper_triangular_transpose(
         let mut sum = b[i];
         for j in 0..i {
             // $(b_i - \sum_{j=0}^{i-1} u_{ji}\, x_j)$
-            sum -= U[j * m + i] * b[j];
+            sum -= u[j * m + i] * b[j];
         }
-        b[i] = sum / U[i * m + i];
+        b[i] = sum / u[i * m + i];
     }
     true
 }
