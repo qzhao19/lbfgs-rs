@@ -11,6 +11,13 @@ compile_error!(
      Use `cargo build --no-default-features --features f32` or `cargo build --features f64`."
 );
 
+#[cfg(all(feature = "sse", feature = "avx2"))]
+compile_error!(
+    "Features `sse` and `avx2` are mutually exclusive. \
+     Enable only one x86 SIMD backend: \
+     `--no-default-features --features sse` or `--features avx2`."
+);
+
 #[cfg(not(any(feature = "f32", feature = "f64")))]
 compile_error!(
     "lbfgs-rs supports single (f32) and double (f64) precision floating-point formats exclusively. \
