@@ -1,3 +1,4 @@
+use crate::infra::math::vec_ops::{vec_dot, vec_scaled_add_inplace};
 use crate::shared::numeric::ScalarType;
 
 /// Solve `U·x = b` in place, where `U` is the upper triangle of the
@@ -19,13 +20,11 @@ pub(crate) fn solve_upper_triangular(
         }
     }
 
-    // 2. Solve Ux = b
+    // 2. Back substitution: x_i = (b_i − <row_i, x_{i+1..k}>) / u_{ii}.
     for i in (0..k).rev() {
-        let mut sum = b[i];
-        for j in (i + 1)..k {
-            // $u_{ii}x_i = b_i - \sum_{j=i+1}^{k} u_{ij}x_j$
-            sum -= u[i * m + j] * b[j];
-        }
+        let row = &u[i * m + (i + 1)..i * m + k];
+        let tail = &b[(i + 1)..k];
+        let sum = b[i] - vec_dot(row, tail);
         b[i] = sum / u[i * m + i];
     }
 
@@ -53,13 +52,13 @@ pub(crate) fn solve_upper_triangular_transpose(
     }
 
     // 2. Solve U'x = b
-    for i in 0..k {
-        let mut sum = b[i];
-        for j in 0..i {
-            // $(b_i - \sum_{j=0}^{i-1} u_{ji}\, x_j)$
-            sum -= u[j * m + i] * b[j];
-        }
-        b[i] = sum / u[i * m + i];
+
+    for j in 0..k {
+        let xj = b[j] / u[j * m + j];
+        b[j] = xj;
+        let row = &u[j * m + (j + 1)..j * m + k];
+        vec_scaled_add_inplace(row, -xj, &mut b[(j + 1)..k]);
     }
+
     true
 }
