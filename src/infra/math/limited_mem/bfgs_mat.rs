@@ -2,9 +2,9 @@ use crate::infra::math::vec_ops::{vec_dot, vec_scale_inplace, vec_scaled_add_inp
 use crate::shared::numeric::ScalarType;
 
 /// One slot of the limited-memory correction history: a single (s, y) pair
-/// - `s = x_{k+1} - x_k`, 
-/// - `y = g_{k+1} - g_k` 
-/// - `ys = s'y` its curvature scalar 
+/// - `s = x_{k+1} - x_k`,
+/// - `y = g_{k+1} - g_k`
+/// - `ys = s'y` its curvature scalar
 #[derive(Clone, Debug)]
 pub(crate) struct LimitedMemCorrHistory {
     /// Displacement vector
@@ -41,18 +41,27 @@ pub(crate) struct LimitedMemBfgsMat {
     bound: usize,
 
     // ── Compact-representation derived state (L-BFGS-B only) ──
-    /// `S'Y`, `m × m` column-major in **logical order** (`sy`):
-    /// entry `(j, k)` belongs to the `j`-th oldest s-vector and the `k`-th
-    /// oldest y-vector, `j, k ∈ 1..=col`
+    /// `S'Y`, `m × m` **row-major** in **logical order** (`sy`):
+    /// entry `(j, k)` at `sy[(j-1)*m + (k-1)]` belongs to the `j`-th oldest
+    /// s-vector and the `k`-th oldest y-vector, `j, k ∈ 1..=col`
     pub sy: Vec<ScalarType>,
     /// Upper triangle holds `J'`, the Cholesky factor of
     /// `T = theta*S'S + L*D^{-1}*L'` (eq. 2.26 in Byrd-Lu-Nocedal-Zhu),
-    /// `m × m` column-major (`wt`). Produced by `formt` (pending),
+    /// `m × m` **row-major** (`wt`). Produced by `formt` (pending),
     /// consumed by `bmv`
     pub wt: Vec<ScalarType>,
     /// Scaling factor `B_0 = theta*I` (`theta`, initial 1; set by
     /// `matupd` to `y'y / y's`)
     pub theta: ScalarType,
+    /// Upper triangle holds the factor `R` of the indefinite subspace
+    /// matrix, `K = R'·E·R` with `E = diag(-I, I)` (Fortran `wn`),
+    /// `2m × 2m` **row-major**. Produced by `formk`, consumed by `subsm`.
+    pub wn: Vec<ScalarType>,
+    /// Inner-product cache `[Y'ZZ'Y  L_a'+R_z'; L_a+R_z  S'AA'S]` (lower
+    /// triangle only), updated incrementally by `formk` across iterations
+    /// (Fortran `wn1`; passed as `snd` from `mainlb`), `2m × 2m`
+    /// **row-major**.
+    pub wn1: Vec<ScalarType>,
 }
 
 impl LimitedMemBfgsMat {
@@ -70,6 +79,8 @@ impl LimitedMemBfgsMat {
             sy: vec![0.0; capacity * capacity],
             wt: vec![0.0; capacity * capacity],
             theta: 1.0,
+            wn: vec![0.0; 4 * capacity * capacity],
+            wn1: vec![0.0; 4 * capacity * capacity],
         }
     }
 
