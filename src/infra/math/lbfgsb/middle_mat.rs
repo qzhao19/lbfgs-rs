@@ -28,7 +28,7 @@ pub(crate) fn middle_mat_vec_prod(
         // sum = Σ_{k=1}^{i-1} sy(i,k)·v(k)/sy(k,k)
         let mut sum: ScalarType = 0.0;
         for k in 1..i {
-            sum += sy[(i - 1) + (k - 1) * m] * v[k - 1] / sy[(k - 1) + (k - 1) * m];
+            sum += sy[(i - 1) * m + (k - 1)] * v[k - 1] / sy[(k - 1) * m + (k - 1)];
         }
         p[col + i - 1] = v[col + i - 1] + sum;
     }
@@ -39,11 +39,12 @@ pub(crate) fn middle_mat_vec_prod(
 
     // Solve D^(1/2)·p1 = v1.
     for i in 1..=col {
-        p[i - 1] = v[i - 1] / sy[(i - 1) + (i - 1) * m].sqrt();
+        p[i - 1] = v[i - 1] / sy[(i - 1) * m + (i - 1)].sqrt();
     }
 
     // ── PART II: solve [ -D^(1/2)   D^(-1/2)*L' ] [ p1 ]   [ p1 ]
     //                [  0         J'            ] [ p2 ] = [ p2 ]
+    // Fortran lines 1199-1214.
 
     // Solve J'·p2 = p2.  [dtrsl job = 01]
     if !solve_upper_triangular(wt, m, col, &mut p[col..2 * col]) {
@@ -52,13 +53,13 @@ pub(crate) fn middle_mat_vec_prod(
 
     // p1 = -D^{-1/2}·(p1 - D^{-1/2}·L'·p2) = -D^{-1/2}·p1 + D^{-1}·L'·p2.
     for i in 1..=col {
-        p[i - 1] = -p[i - 1] / sy[(i - 1) + (i - 1) * m].sqrt();
+        p[i - 1] = -p[i - 1] / sy[(i - 1) * m + (i - 1)].sqrt();
     }
     for i in 1..=col {
         // sum = Σ_{k=i+1}^{col} sy(k,i)·p(col+k)/sy(i,i)
         let mut sum: ScalarType = 0.0;
         for k in (i + 1)..=col {
-            sum += sy[(k - 1) + (i - 1) * m] * p[col + k - 1] / sy[(i - 1) + (i - 1) * m];
+            sum += sy[(k - 1) * m + (i - 1)] * p[col + k - 1] / sy[(i - 1) * m + (i - 1)];
         }
         p[i - 1] += sum;
     }
